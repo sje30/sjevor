@@ -31,23 +31,23 @@ if (need.newdmins) {
 library(sjevor)
 library(deldir)                         #used for comparison.
 
-my.quantiles <- function(x, y) {
-  ## Compare two distributions
-  print(signif(quantile(abs(v.areas - mat.areas), na.rm=T,
-                        probs=c(0, .05, .25, .50, 0.75, 0.95, 1)),4))
-}
 
-##par(mfcol=c(2,nreps))
-for (i in 1:nreps) {
-  print(i)
-  infile <- gsub("XX", as.character(i), "dminXX.txt")
-  matfile <- gsub("XX", as.character(i), "dminXX_matareas.txt")
+
+compare <- function(infile, matfile) {
+
+  my.quantiles <- function(x, y) {
+    ## Compare two distributions
+    print(signif(quantile(abs(v.areas - mat.areas), na.rm=T,
+                          probs=c(0, .05, .25, .50, 0.75, 0.95, 1)),4))
+  }
+
+  
   mat.areas <- scan(matfile, quiet=T)
   dat <- read.table(infile)
   v <- vorcr(dat[,1], dat[,2], 0, width, 0, height, fuzz=0)
   v.areas <- v$info[,4]
   v.areas[which(v.areas<0)] <- NaN
-
+  
   cat("sjevor vs matlab\n")
   my.quantiles(v.areas, mat.areas)
   ##
@@ -63,6 +63,16 @@ for (i in 1:nreps) {
   my.quantiles( deldir.areas, mat.areas)
 }
 
+##par(mfcol=c(2,nreps))
+for (i in 1:nreps) {
+  print(i)
+  infile <- gsub("XX", as.character(i), "dminXX.txt")
+  matfile <- gsub("XX", as.character(i), "dminXX_matareas.txt")
+  compare(infile, matfile)
+}
+
+compare("w81s.on.d", "w81s.on.matareas.txt")
+compare("triarray.dat", "triarray_matareas.txt")
 ## most areas seem about on order of 1e-5.  Typical errors range
 ## between 10-8 and 10-4.  Small differences may be due to numerical
 ## fuzz added (e.g. "frac" used by deldir; I think matlab 6 no longer
