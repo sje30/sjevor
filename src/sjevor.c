@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.11 $
-*** $Date: 2002/03/13 00:00:21 $
+*** $Revision: 1.12 $
+*** $Date: 2003/02/27 17:57:08 $
 ****************************************************************************/
 
 
@@ -562,7 +562,21 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 	if (snfp) fprintf(snfp,"%d ", dists[i].key);
 	sneighs[SNIND(p,i,npts)] = dists[i].key;
       }
-	  
+
+      if (info[RIND(p,1,npts)] != sneighs[SNIND(p, 0, npts)]) {
+
+	/* We have a conflict between the nearest neighbours stored in
+	 * *info and *sneighs.  In this case, we check that the 2nd
+	 * neighbour is really the closest. R also has code to check
+	 * for this case. */
+	if ( (info[RIND(p,1,npts)] == sneighs[SNIND(p, 1, npts)]) &&
+	     fabs(dists[0].dist - dists[1].dist) <= 1e-9) {
+	  /* 2nd element is also the nearest neighbour, so update info. */
+	  info[RIND(p,1,npts)] = sneighs[SNIND(p, 0, npts)];
+	} else {
+	  Rprintf("Call the Eglen hotline, as we're in trouble\n");
+	}
+      }
       if (snfp) fputs("\n", snfp);
     }
 
