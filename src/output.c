@@ -44,9 +44,8 @@ out_bisector(e)
 
   lnum++;
   if (lnum >= lnum_max) {
-    Rprintf("%s:%d lnum_max (%d) reached\n",
+    error("%s:%d lnum_max (%d) reached\n",
 	   __FILE__, __LINE__, lnum_max);
-    exit(-1);
   }
   
 }
@@ -76,9 +75,8 @@ out_ep(e)
   ednum++;
 
   if (ednum >= ednum_max) {
-    Rprintf("%s:%d ednum_max (%d) reached\n",
+    error("%s:%d ednum_max (%d) reached\n",
 	   __FILE__, __LINE__, ednum_max);
-    exit(-1);
   }
 
 }
@@ -90,9 +88,8 @@ out_vertex(v)
   vnum++;
 
   if (vnum >= vnum_max) {
-    Rprintf("%s:%d vnum_max (%d) reached\n",
+    error("%s:%d vnum_max (%d) reached\n",
 	   __FILE__, __LINE__, vnum_max);
-    exit(-1);
   }
 
 #ifdef sje_print_vorinfo
@@ -130,9 +127,8 @@ out_triple(s1, s2, s3)
   int offset = 1;		/* for converting from 0-based to 1-based. */
   /* Save the triangulation information */
   if (del_idn+3 > del_idmax ) {
-    Rprintf("%s:%d del_idmax (%d) reached\n",
+    error("%s:%d del_idmax (%d) reached\n",
 	   __FILE__, __LINE__, del_idmax);
-    exit(-1);
   } else {
     /* Store the ids of the triangle. */
     del_ids[del_idn] = s1->sitenbr + offset;
@@ -250,10 +246,8 @@ int clip_line(e)
 
 
   if (poly_idn+4 > poly_idmax ) {
-    Rprintf("%s:%d poly_idmax (%d) reached\n",
+    error("%s:%d poly_idmax (%d) reached\n",
 	   __FILE__, __LINE__, poly_idmax);
-    Rprintf("oh oh -- can we get back to R?  \n");
-    /* SJE: have a problem -- error() causes R to crash, not good. */
 
   } else {
     /* Store the ends of the line bisector. */
