@@ -118,14 +118,14 @@ del.plot <- function(pts, v) {
   par(col ="red")
   for (i in v$delrej) {
     t <- c(v$delids[i,], v$delids[i,1]);
-    lines(tdata[t,])
+    lines(pts[t,])
   }
   
   ## draw accepted tris.
   par(col ="blue")
   for (i in v$delacc) {
     t <- c(v$delids[i,], v$delids[i,1]);
-    lines(tdata[t,])
+    lines(pts[t,])
   }
 
   par(col = "black")                    #reset to usual colour.
