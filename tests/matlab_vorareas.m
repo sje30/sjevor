@@ -1,18 +1,12 @@
-%% Compute Voronoi areas of a set of mosaics.
+%% Compute Voronoi areas of a set of mosaics, both dmin and other
+%% areas.  These functions use matlab_vor.m to do the hard work.
+
 %% Thu 27 Feb 2003
 for n = 1:6
   in = sprintf('dmin%d.txt', n)
   out = sprintf('dmin%d_matareas.txt', n)
-  dat = load(in);
-  [v,c] = voronoin(dat);
-  
-  npts = length(dat);
-  areas = zeros(npts,1);
-  for i = 1:npts 
-    as = v( c{i}, :);
-    areas(i) = polyarea( as(:,1), as(:,2));
-  end
-  save(out, 'areas', '-ascii')
+  matlab_vor(in, out);
 end
+matlab_vor('w81s.on.d', 'w81s.on.matareas.txt')
+matlab_vor('triarray.dat', 'triarray_matareas.txt')
 
-%% save -ascii  dopa_sampleb_matlabarea.txt areas 
