@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.9 $
-*** $Date: 2002/02/15 04:20:39 $
+*** $Revision: 1.10 $
+*** $Date: 2002/02/15 16:45:04 $
 ****************************************************************************/
 
 
@@ -45,20 +45,21 @@ void voronoi(int triangulate, struct Site *(*nextsite)());
 
 
 void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
-	    Sfloat *info, int *sneighs, Sfloat *ias,
+	    Sfloat *info, int *sneighs,
+	    Sfloat *ias,
 	    int *del_ids2, Sfloat *del_lens2, Sfloat *del_angs2,
-	    Sfloat *poly_pts2, int *poly_npts,
+	    Sfloat *poly_pts2,
 	    Sfloat *vx1, Sfloat *vy1, int *vertices,
-	    int *pnpts)
+	    int *pnpts,
+	    int *limits, int *debug)
 {
 
   int i, npts, j;
   struct Site *(*next)();
-
+  int ias_max;			/* max length of ias vector */
+  int  poly_npts;
   char *opts;
-
   opts = *popts;
-
   /* Set all pointers initially to be NULL; seems like sometimes they
    * could be initialised to rogue values.  Other pointers are okay,
    * since they will always get allocated.
@@ -80,78 +81,71 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   
   /* Set up my data structures for remembering things. */
 
+  /* Read in the limits for the data structures.  Note that the
+   * poly_npts is changed on exit.  Also remember that C indexes are
+   * zero-based, and R indexes are one-based. */
+   
+  ias_max        = limits[0];
+  max_del_tris   = limits[1];
+  poly_npts      = limits[2];
+  max_num_neighs = limits[3];
+
+  sje_debug = *debug;
+  if (sje_debug) {
+    Rprintf("limits:\nias_max\t%d\n",ias_max);
+    Rprintf("max_del_tris\t%d\n",max_del_tris);
+    Rprintf("poly_npts\t%d\n",poly_npts);
+    Rprintf("max_num_neighs\t%d\n", max_num_neighs);
+  }
 
   first_index = 1;		/* 0/1 offset problem in C vs R/Octave arrays*/
-
-  num_fortune_pointers = 0;	/* Set this to zero before we
-				 * call and Fortune routines.
-				 */
 
   /* Conservative guesses for the amount of space to allocate for
    * each structure.
    */
 
+  
   /* Number of vertices should equal the number of neighbours. */
-  max_numvertices = MAX_NUM_NEIGHS; 	/*  TODO just a guess! */
+  max_numvertices = max_num_neighs; 	/*  TODO just a guess! */
   max_numvertices_o = max_numvertices;
-  vnum_max = MAX_DEL_TRIS * npts;
-  lnum_max = MAX_DEL_TRIS * npts;		/* conservative guess. */
-  ednum_max = MAX_DEL_TRIS * npts;
+  vnum_max = max_del_tris * npts;
+  lnum_max = max_del_tris * npts;		/* conservative guess. */
+  ednum_max = max_del_tris * npts;
 
   /* e.g. for `t' data set of 100 points, we had 187 vertices, 286
    * lines and 286 edges. */
 
-  /* Define "alloc_vx" if we wish the C program to allocate (& free) the
-   * memory for the vertice positions (vx, vy) and the vertice numbers for
-   * each site (verticeso)
-   */
-#ifdef alloc_vx
-  vx = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
-  if (! vx) { 
-    Rprintf("could not allocate space for vx %d\n", vnum_max);
-    exit(-1);
-  }
-
-  vy = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
-  if (! vy) { 
-    Rprintf("could not allocate space for vy\n");
-    exit(-1);
-  }
-#else
   /* R already allocates this memory to store the vertices. */
   vx = vx1; vy = vy1; verticeso = vertices;
-#endif
+
   
   vnum = 0;
 
-  la  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
-  lb  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
-  lc  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
-  lb1 = (int*)calloc(lnum_max, sizeof(int));
-  lb2 = (int*)calloc(lnum_max, sizeof(int));
+  la  = (Sfloat*)R_alloc(lnum_max, sizeof(Sfloat));
+  lb  = (Sfloat*)R_alloc(lnum_max, sizeof(Sfloat));
+  lc  = (Sfloat*)R_alloc(lnum_max, sizeof(Sfloat));
+  lb1 = (int*)R_alloc(lnum_max, sizeof(int));
+  lb2 = (int*)R_alloc(lnum_max, sizeof(int));
   lnum = 0;
 
   if ((!la) || (!lb) || (!lc) || (!lb1) || (!lb2)) {
-    Rprintf("could not allocate space for line data structures\n");
-    exit(-1);
+    error("could not allocate space for line data structures\n");
   }
 
-  el  = (int*)calloc(ednum_max, sizeof(int));
-  ev1  = (int*)calloc(ednum_max, sizeof(int));
-  ev2  = (int*)calloc(ednum_max, sizeof(int));
+  el  = (int*)R_alloc(ednum_max, sizeof(int));
+  ev1  = (int*)R_alloc(ednum_max, sizeof(int));
+  ev2  = (int*)R_alloc(ednum_max, sizeof(int));
   ednum = 0;
   
   if ((!el) || (!ev1) || (!ev2) ) {
-    Rprintf("could not allocate space for line data structures\n");
-    exit(-1);
+    error("could not allocate space for edge data structures\n");
   }
   
   
 
-  reject = (int*)calloc(npts, sizeof(int));
+  reject = (int*)R_alloc(npts, sizeof(int));
   if (! reject) { 
-    Rprintf("could not allocate space for reject\n");
-    exit(-1);
+    error("could not allocate space for reject\n");
   }
 
   sje_minx = dims[0]; sje_maxx = dims[1];
@@ -161,9 +155,9 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   del_lens = del_lens2; del_angs = del_angs2;
 
   del_idn = 0;			/* first free space */
-  del_idmax = MAX_DEL_TRIS * 3 * npts;
+  del_idmax = max_del_tris * 3 * npts;
 
-  poly_idn = 0; poly_idmax = *poly_npts;
+  poly_idn = 0; poly_idmax = poly_npts;
   poly_pts = poly_pts2;
   
   /*************************************************************/
@@ -189,15 +183,6 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 
   /* Post-process the memory structures. */
 
-  /* Now that we have finished with Fortune code, remove the pointers.
-   * See memory.c for details. */
-
-  /*printf("%d fortune pointers allocated\n", num_fortune_pointers);*/
-  for(i=0; i< num_fortune_pointers; i++) {
-    free(fortune_pointers[i]);
-  }
-
-
   /* Initialise the info array. */
   for (i=0; i<npts;i++) {
     info[RIND(i,0,npts)] =  (Sfloat)(i + first_index); /* index num */
@@ -222,7 +207,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   if (need_areas) {
     find_vertices(npts);
     find_areas(npts, info);
-    find_internal_angles(xpts, ypts, npts, ias);
+    find_internal_angles(xpts, ypts, npts, ias, ias_max);
 
     /* When returning vertice numbers, increase numbers by 1 to account
      * for 0/1 array problem.  This needed only if we want to return
@@ -238,31 +223,10 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 				 * how many Delaunay triangles were found.
 				 */
 
-  *poly_npts = poly_idn;
+  limits[2] = poly_idn;		/* return the number of polygons. */
 
   
-  /* Clear-up memory. */
-#ifdef alloc_vx
-  myfree(vx); myfree(vy);
-  myfree(verticeso);
-#endif
-  
-  myfree(la); myfree(lb); myfree(lc); myfree(lb1); myfree(lb2);
-  myfree(el); myfree(ev1); myfree(ev2);
-  myfree(reject);
-
-  myfree(numneighs); myfree(neighs);
-  myfree(numvertices); 
 }
-
-
-void myfree(void *ptr)
-{
-  /* free the memory, but check first that the ptr is not NULL. */
-  if (ptr) free(ptr);
-}
-
-
 
 void find_rejects(int npts)
 {
@@ -331,8 +295,8 @@ void init_neighs(int npts)
 {
   /* initialise the neighbours data structures. */
   int i;
-  numneighs = (int*)calloc(npts, sizeof(int));
-  neighs = (int*)calloc(npts*MAX_NUM_NEIGHS, sizeof(int));
+  numneighs = (int*)R_alloc(npts, sizeof(int));
+  neighs = (int*)R_alloc(npts*max_num_neighs, sizeof(int));
   for (i=0; i< npts; i++) {
     numneighs[i] = 0;
   }
@@ -379,10 +343,9 @@ void add_neigh(int i, int j)
   if (looking == 1) {
     neighs[NIND(i,num)] = j;
     numneighs[i]++;
-    if (numneighs[i] >= MAX_NUM_NEIGHS) {
-      Rprintf("%s:%d maximum number of neighbours (%d) exceeded\n",
+    if (numneighs[i] > max_num_neighs) {
+      error("%s:%d maximum number of neighbours (%d) exceeded\n",
 	     __FILE__, __LINE__, numneighs[i]);
-      exit(-1);
     }
       
   }
@@ -400,8 +363,7 @@ void write_neighs(int npts)
   char *file  = "neighs";
   fp = fopen( file, "w");
   if (! fp ) {
-    Rprintf("write_neighs: %s could not be opened for writing", file);
-    exit(-1);
+    error("write_neighs: %s could not be opened for writing", file);
   }
 
   for(i=0; i<npts; i++) {
@@ -441,22 +403,23 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 
 
   if (0 && !(nndfp = fopen( file, "w"))) {
-    Rprintf("%s: %s could not be opened for writing",
+    error("%s: %s could not be opened for writing",
 	   "find_nnd", file);
-    exit(-1);
   }
 
   if (sort_neighs) {
     if (0 && !(snfp = fopen("sneighs", "w"))) {
-      Rprintf("Could not open sneighs for writing\n");
-      exit(-1);
+      error("Could not open sneighs for writing\n");
     }
   }
 
+  /* Allocate room for the dists array. */
+  dists = (Keydist *)R_alloc(max_num_neighs, sizeof(Keydist));
+  
   /* initialise the sneighs array to store -1. */
   /* TODO: This loop can be optimised! */
   /* If we are not sorting the neighbours, need to return -1 anyway. */
-  num_sneighs = npts*MAX_NUM_NEIGHS;
+  num_sneighs = npts*max_num_neighs;
   for(i=0; i< num_sneighs; i++) {
     sneighs[i] = -1;
   }
@@ -493,10 +456,9 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
       }
 
       if (sort_neighs) {
-	if (n >= MAX_DISTS) {
-	  Rprintf("%s:%d: too many distances %d\n",
+	if (n >= max_num_neighs) {
+	  error("%s:%d: too many distances %d\n",
 		 __FILE__, __LINE__, n);
-	  exit(-1);
 	}
 	dists[n].key = i + first_index;
 	dists[n].dist = dist2;
@@ -574,23 +536,18 @@ void find_vertices(int npts)
   int looking, nverts, i;  
   int *vertices1, *vertices2;
   
-  numvertices = (int*)calloc(npts, sizeof(int));
-  vertices1 = (int*)calloc(max_numvertices*npts, sizeof(int));
-  vertices2 = (int*)calloc(max_numvertices*npts, sizeof(int));
-#ifdef alloc_vx
-  verticeso = (int*)calloc(max_numvertices_o*npts, sizeof(int));
-#endif
+  numvertices = (int*)R_alloc(npts, sizeof(int));
+  vertices1 = (int*)R_alloc(max_numvertices*npts, sizeof(int));
+  vertices2 = (int*)R_alloc(max_numvertices*npts, sizeof(int));
 
 
   if (!vertices1 || !vertices2 || !verticeso) {
-    Rprintf("couldn't allocate vertices1/2/o\n");
-    exit(-1);
+    error("couldn't allocate vertices1/2/o\n");
   }
 
   
   if (! numvertices) { 
-    Rprintf("%s: could not allocate space for numvertices\n", "sjevorxx");
-    exit(-1);
+    error("%s: could not allocate space for numvertices\n", "sjevorxx");
   }
   
   /* Initialise array to store the number of vertices for each data point. */
@@ -611,9 +568,8 @@ void find_vertices(int npts)
     p = p1;
     numv = numvertices[p];
     if ((numvertices[p] ++) > max_numvertices) {
-      Rprintf("%s:%d exceeded max_numvertices: %d\n",
+      error("%s:%d exceeded max_numvertices: %d\n",
 	     __FILE__, __LINE__, max_numvertices);
-      exit(-1);
     }
     vertices1[VIND(p,numv)] = v1;
     vertices2[VIND(p,numv)] = v2;
@@ -621,9 +577,8 @@ void find_vertices(int npts)
     p = p2;
     numv = numvertices[p];
     if ((numvertices[p] ++) > max_numvertices) {
-      Rprintf("%s:%d exceeded max_numvertices: %d\n",
+      error("%s:%d exceeded max_numvertices: %d\n",
 	     __FILE__, __LINE__, max_numvertices);
-      exit(-1);
     }
     vertices1[VIND(p,numv)] = v1;
     vertices2[VIND(p,numv)] = v2;
@@ -671,9 +626,8 @@ void find_vertices(int npts)
       norder = 0;
       verticeso[VOIND(p,norder)] = first; norder++;
       if (norder > max_numvertices_o) {
-	Rprintf("%s:%d max_numvertices_o (%d) reached\n",
+	error("%s:%d max_numvertices_o (%d) reached\n",
 	       __FILE__, __LINE__, norder);
-	exit(-1);
       }
 
       looking = 1;
@@ -703,7 +657,8 @@ void find_vertices(int npts)
   }
     
   /* After sorting, no longer need the unordered vertices. */
-  myfree(vertices1); myfree(vertices2);
+  /* Tue 12 Mar 2002: these are now freed by R. */
+  /* myfree(vertices1); myfree(vertices2);*/
     
   /*Print out the ordered vertices for each data point. */
 #ifdef unused
@@ -797,7 +752,8 @@ void find_areas(int npts, Sfloat *info)
 
 
 
-void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts, Sfloat *ias)
+void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts,
+			  Sfloat *ias, int ias_max)
 {
   /* Compute the internal angles from each site to its vertices. */
 
@@ -809,13 +765,15 @@ void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts, Sfloat *ias)
    *
    * Since we know the coordinates of the three vertices of each
    * triangle, we compute theta using the cosine rule. */
-   
+
   int nextfree = 0;
 
   int p, n, i, v1, v2;
   Sfloat xi2, yi2, xi1, yi1, x, y, a,b2,c;
   Sfloat theta;
-
+  if (sje_debug) 
+    Rprintf("find_internal_angles: max number of entries %d\n", ias_max);
+    
   for (p=0; p < npts; p++) {
     /* Loop over each site. */
 
@@ -848,12 +806,16 @@ void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts, Sfloat *ias)
       b2 =     ( ((xi2-xi1)*(xi2-xi1)) + ((yi2-yi1)*(yi2-yi1)) );
       c  = sqrt( ((x-xi2)*(x-xi2)) +     ((y-yi2)*(y-yi2)) );
       theta = acos( ((a*a) + (c*c) - b2) / (2*a*c)) * RAD_TO_DEG;
-
-      ias[nextfree++] = theta;
+      if (nextfree < ias_max) 
+	ias[nextfree++] = theta;
+      else
+	error("internal angles: no more space %d\n", nextfree);
     }
   }
-  ias[nextfree++] = -1;		/* terminator mark. */
-
+  if (nextfree < ias_max) 
+    ias[nextfree++] = -1;		/* terminator mark. */
+  else
+    error("internal angles: no more space %d\n", nextfree);
 }
 
 void sjevoradd(Sfloat *xpts, Sfloat *ypts, Sfloat *temp, int npts)
