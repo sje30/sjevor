@@ -39,30 +39,16 @@ char *myalloc(n)
      unsigned n;
 {
   char *t;
-  if ((t=malloc(n)) == (char *) 0)
+  if ((t=R_alloc(n,1)) == (char *) 0)
     {    fprintf(stderr,"Insufficient memory processing site %d (%d bytes in use)\n",
 		 siteidx, total_alloc);
-    exit(-1);			/* sje: include -1. */
+    error("Error in myalloc from memory.c");
     };
   total_alloc += n;
 
-
-  /* Keep hold of memory allocated here.  Since the Fortune code
-   * doesn't seem to free any memory itself, we keep a list of all the
-   * pointers allocated and then we can free them after we have
-   * finished with the Fortune code.  We store them in a list.
-   * Luckily, this function seems to be the only place where memory is
-   * allocated.
-   */
+  /* We used to keep a memory of the fortune pointers allocated, but
+   * now instead we use R_alloc().  R takes care of freeing the memory
+   * at the end of the .C call. This seems more sensible. */
   
-  /*printf("sje: allocated %d to total %d\n", n, total_alloc); */
-  
-  if (num_fortune_pointers >= MAX_FORTUNE_POINTERS) {
-    Rprintf("bye bye... reached limit of fortune pointers %d\n",
-	   num_fortune_pointers);
-    exit(-1);
-  } else {
-    fortune_pointers[num_fortune_pointers++] = t;
-  }
   return(t);
 }
