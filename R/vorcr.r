@@ -82,6 +82,32 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
          numneighs = numneighs)
 }
 
+vorcr.dellens <- function(vor, idxs=NULL) {
+  ## Helper function to get the Delaunay Segment lengths.
+  ##
+  ## IDXS is a vector of triangle indexes for which we want to compute
+  ## segment lengths.  If this is NULL, we should compute the
+  ## segment lengths for all triangles.
+
+  if (length(idxs) == 0)
+    idxs <- 1:dim(vor$delids)[1]
+  nsites <- dim(vor$info)[1]
+
+  ## ds will be a sparse, upper triangular matrix.
+  ds <- matrix(0, nrow=nsites, ncol = nsites)
+
+  ## Use sort() to ensure that first index is always smaller than the
+  ## second index, to make an upper triangular matrix.
+  ## e.g. t(apply(cbind( c(1,7,8), c(5,2,6)),1,sort))
+
+  ds[ t(apply(cbind(vor$delids[idxs,1], vor$delids[idxs,2]),1,sort)) ] <-
+    vor$dellens[idxs,1]
+  ds[ t(apply(cbind(vor$delids[idxs,2], vor$delids[idxs,3]),1,sort)) ] <-
+    vor$dellens[idxs,2]
+  ds[ t(apply(cbind(vor$delids[idxs,3], vor$delids[idxs,1]),1,sort)) ] <-
+    vor$dellens[idxs,3]
+  ds[which(ds>0)]
+}
 
 
 
@@ -131,5 +157,7 @@ del.plot <- function(pts, v) {
 
   par(col = "black")                    #reset to usual colour.
 }
+
+
 
 ## dyn.unload("/home/stephen/langs/R/vorr/libvor.so")
