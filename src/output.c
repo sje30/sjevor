@@ -22,17 +22,17 @@ out_bisector(e)
 	 e->reg[1]->coord.x, e->reg[1]->coord.y);
   if(!triangulate & !plot &!debug)
 #ifdef sjetemp
-    printf("l %f %f %f\n", e->a, e->b, e->c); /* sje: add \n */
+    Rprintf("l %f %f %f\n", e->a, e->b, e->c); /* sje: add \n */
 #endif
 
   /* sje -- printout bisecting info as well. */
 #ifdef sje_print_vorinfo  
-  printf("l %f %f %f %d %d\n", 
+  Rprintf("l %f %f %f %d %d\n", 
 	 e->a, e->b, e->c, e->reg[le]->sitenbr, e->reg[re]->sitenbr);
 #endif
   
   if(debug)
-    printf("line(%d) %gx+%gy=%g, bisecting %d %d\n", e->edgenbr,
+    Rprintf("line(%d) %gx+%gy=%g, bisecting %d %d\n", e->edgenbr,
 	   e->a, e->b, e->c, e->reg[le]->sitenbr, e->reg[re]->sitenbr);
 
 
@@ -44,7 +44,7 @@ out_bisector(e)
 
   lnum++;
   if (lnum >= lnum_max) {
-    printf("%s:%d lnum_max (%d) reached\n",
+    Rprintf("%s:%d lnum_max (%d) reached\n",
 	   __FILE__, __LINE__, lnum_max);
     exit(-1);
   }
@@ -63,9 +63,9 @@ out_ep(e)
 
 #ifdef sje_print_vorinfo
   if(!triangulate & !plot)
-    {	printf("e %d", e->edgenbr);
-    printf(" %d ", e->ep[le] != (struct Site *)NULL ? e->ep[le]->sitenbr : -1);
-    printf("%d\n", e->ep[re] != (struct Site *)NULL ? e->ep[re]->sitenbr : -1);
+    {	Rprintf("e %d", e->edgenbr);
+    Rprintf(" %d ",e->ep[le] != (struct Site *)NULL ? e->ep[le]->sitenbr : -1);
+    Rprintf("%d\n",e->ep[re] != (struct Site *)NULL ? e->ep[re]->sitenbr : -1);
     };
 #endif
   
@@ -76,7 +76,7 @@ out_ep(e)
   ednum++;
 
   if (ednum >= ednum_max) {
-    printf("%s:%d ednum_max (%d) reached\n",
+    Rprintf("%s:%d ednum_max (%d) reached\n",
 	   __FILE__, __LINE__, ednum_max);
     exit(-1);
   }
@@ -90,16 +90,16 @@ out_vertex(v)
   vnum++;
 
   if (vnum >= vnum_max) {
-    printf("%s:%d vnum_max (%d) reached\n",
+    Rprintf("%s:%d vnum_max (%d) reached\n",
 	   __FILE__, __LINE__, vnum_max);
     exit(-1);
   }
 
 #ifdef sje_print_vorinfo
   if(!triangulate & !plot &!debug)
-    printf ("v %f %f\n", v->coord.x, v->coord.y);
+    Rprintf ("v %f %f\n", v->coord.x, v->coord.y);
   if(debug)
-    printf("vertex(%d) at %f %f\n", v->sitenbr, v->coord.x, v->coord.y);
+    Rprintf("vertex(%d) at %f %f\n", v->sitenbr, v->coord.x, v->coord.y);
 #endif
 }
 
@@ -113,9 +113,9 @@ out_site(s)
   if(!triangulate & plot & !debug)
     circle (s->coord.x, s->coord.y, cradius);
   if(!triangulate & !plot & !debug)
-    printf("s %f %f\n", s->coord.x, s->coord.y);
+    Rprintf("s %f %f\n", s->coord.x, s->coord.y);
   if(debug)
-    printf("site (%d) at %f %f\n", s->sitenbr, s->coord.x, s->coord.y);
+    Rprintf("site (%d) at %f %f\n", s->sitenbr, s->coord.x, s->coord.y);
 #endif
 }
 
@@ -130,7 +130,7 @@ out_triple(s1, s2, s3)
   int offset = 1;		/* for converting from 0-based to 1-based. */
   /* Save the triangulation information */
   if (del_idn+3 > del_idmax ) {
-    printf("%s:%d del_idmax (%d) reached\n",
+    Rprintf("%s:%d del_idmax (%d) reached\n",
 	   __FILE__, __LINE__, del_idmax);
     exit(-1);
   } else {
@@ -160,9 +160,9 @@ out_triple(s1, s2, s3)
   }
     
   if(triangulate & !plot &!debug)
-    printf("%d %d %d\n", s1->sitenbr, s2->sitenbr, s3->sitenbr);
+    Rprintf("%d %d %d\n", s1->sitenbr, s2->sitenbr, s3->sitenbr);
   if(debug)
-    printf("circle through left=%d right=%d bottom=%d\n", 
+    Rprintf("circle through left=%d right=%d bottom=%d\n", 
 	   s1->sitenbr, s2->sitenbr, s3->sitenbr);
 }
 

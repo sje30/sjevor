@@ -58,7 +58,7 @@ char *myalloc(n)
   /*printf("sje: allocated %d to total %d\n", n, total_alloc); */
   
   if (num_fortune_pointers >= MAX_FORTUNE_POINTERS) {
-    printf("bye bye... reached limit of fortune pointers %d\n",
+    Rprintf("bye bye... reached limit of fortune pointers %d\n",
 	   num_fortune_pointers);
     exit(-1);
   } else {

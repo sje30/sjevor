@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.8 $
-*** $Date: 2002/01/04 01:57:24 $
+*** $Revision: 1.9 $
+*** $Date: 2002/02/15 04:20:39 $
 ****************************************************************************/
 
 
@@ -108,13 +108,13 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 #ifdef alloc_vx
   vx = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
   if (! vx) { 
-    printf("could not allocate space for vx %d\n", vnum_max);
+    Rprintf("could not allocate space for vx %d\n", vnum_max);
     exit(-1);
   }
 
   vy = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
   if (! vy) { 
-    printf("could not allocate space for vy\n");
+    Rprintf("could not allocate space for vy\n");
     exit(-1);
   }
 #else
@@ -132,7 +132,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   lnum = 0;
 
   if ((!la) || (!lb) || (!lc) || (!lb1) || (!lb2)) {
-    printf("could not allocate space for line data structures\n");
+    Rprintf("could not allocate space for line data structures\n");
     exit(-1);
   }
 
@@ -142,7 +142,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   ednum = 0;
   
   if ((!el) || (!ev1) || (!ev2) ) {
-    printf("could not allocate space for line data structures\n");
+    Rprintf("could not allocate space for line data structures\n");
     exit(-1);
   }
   
@@ -150,7 +150,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 
   reject = (int*)calloc(npts, sizeof(int));
   if (! reject) { 
-    printf("could not allocate space for reject\n");
+    Rprintf("could not allocate space for reject\n");
     exit(-1);
   }
 
@@ -183,7 +183,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 
   /*************************************************************/
   if (sje_debug) {
-    printf("read %d vertices %d lines %d edges\n", vnum, lnum, ednum);
+    Rprintf("read %d vertices %d lines %d edges\n", vnum, lnum, ednum);
   }
 
 
@@ -273,7 +273,7 @@ void find_rejects(int npts)
   }
 
   if (sje_debug) {
-    printf("find_rejects: boundary %f %f %f %f\n", sje_minx, sje_maxx,
+    Rprintf("find_rejects: boundary %f %f %f %f\n", sje_minx, sje_maxx,
 	   sje_miny, sje_maxy);
   }
 
@@ -301,11 +301,11 @@ void find_rejects(int npts)
     
   for (i=0; i< npts; i++) {
     if (reject[i] ) {
-      printf("%d ", (i + first_index));
+      Rprintf("%d ", (i + first_index));
       num_rejects++;
     }
   }
-  printf("; total rejects: %d\n", num_rejects);
+  Rprintf("; total rejects: %d\n", num_rejects);
 #endif
   
 }
@@ -380,7 +380,7 @@ void add_neigh(int i, int j)
     neighs[NIND(i,num)] = j;
     numneighs[i]++;
     if (numneighs[i] >= MAX_NUM_NEIGHS) {
-      printf("%s:%d maximum number of neighbours (%d) exceeded\n",
+      Rprintf("%s:%d maximum number of neighbours (%d) exceeded\n",
 	     __FILE__, __LINE__, numneighs[i]);
       exit(-1);
     }
@@ -400,7 +400,7 @@ void write_neighs(int npts)
   char *file  = "neighs";
   fp = fopen( file, "w");
   if (! fp ) {
-    printf("write_neighs: %s could not be opened for writing", file);
+    Rprintf("write_neighs: %s could not be opened for writing", file);
     exit(-1);
   }
 
@@ -441,14 +441,14 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 
 
   if (0 && !(nndfp = fopen( file, "w"))) {
-    printf("%s: %s could not be opened for writing",
+    Rprintf("%s: %s could not be opened for writing",
 	   "find_nnd", file);
     exit(-1);
   }
 
   if (sort_neighs) {
     if (0 && !(snfp = fopen("sneighs", "w"))) {
-      printf("Could not open sneighs for writing\n");
+      Rprintf("Could not open sneighs for writing\n");
       exit(-1);
     }
   }
@@ -494,7 +494,7 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 
       if (sort_neighs) {
 	if (n >= MAX_DISTS) {
-	  printf("%s:%d: too many distances %d\n",
+	  Rprintf("%s:%d: too many distances %d\n",
 		 __FILE__, __LINE__, n);
 	  exit(-1);
 	}
@@ -583,13 +583,13 @@ void find_vertices(int npts)
 
 
   if (!vertices1 || !vertices2 || !verticeso) {
-    printf("couldn't allocate vertices1/2/o\n");
+    Rprintf("couldn't allocate vertices1/2/o\n");
     exit(-1);
   }
 
   
   if (! numvertices) { 
-    printf("%s: could not allocate space for numvertices\n", "sjevorxx");
+    Rprintf("%s: could not allocate space for numvertices\n", "sjevorxx");
     exit(-1);
   }
   
@@ -611,7 +611,7 @@ void find_vertices(int npts)
     p = p1;
     numv = numvertices[p];
     if ((numvertices[p] ++) > max_numvertices) {
-      printf("%s:%d exceeded max_numvertices: %d\n",
+      Rprintf("%s:%d exceeded max_numvertices: %d\n",
 	     __FILE__, __LINE__, max_numvertices);
       exit(-1);
     }
@@ -621,7 +621,7 @@ void find_vertices(int npts)
     p = p2;
     numv = numvertices[p];
     if ((numvertices[p] ++) > max_numvertices) {
-      printf("%s:%d exceeded max_numvertices: %d\n",
+      Rprintf("%s:%d exceeded max_numvertices: %d\n",
 	     __FILE__, __LINE__, max_numvertices);
       exit(-1);
     }
@@ -632,9 +632,9 @@ void find_vertices(int npts)
   /* test code to print out the vertices belonging to point 0. */
   /*
     for(i=0; i< numvertices[0]; i++) {
-    printf("%d %d  ", vertices1[VIND(0,i)], vertices2[VIND(0,i)]);
+    Rprintf("%d %d  ", vertices1[VIND(0,i)], vertices2[VIND(0,i)]);
     }
-    printf("\n");
+    Rprintf("\n");
   */
     
   /*
@@ -671,7 +671,7 @@ void find_vertices(int npts)
       norder = 0;
       verticeso[VOIND(p,norder)] = first; norder++;
       if (norder > max_numvertices_o) {
-	printf("%s:%d max_numvertices_o (%d) reached\n",
+	Rprintf("%s:%d max_numvertices_o (%d) reached\n",
 	       __FILE__, __LINE__, norder);
 	exit(-1);
       }
