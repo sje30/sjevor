@@ -34,8 +34,8 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
             as.integer(npts),
             limits = as.integer(c(iangles.len, max.del.tris,
               polynpts, max.num.neighs)),
-            as.integer(c(sje.debug))
-            )
+            as.integer(c(sje.debug)),
+            PACKAGE="sjevor")
 
     info <- z$info; dim(info) <- c(npts,4)
     colnames(info) <- c("id", "nn id", "dist", "area")
