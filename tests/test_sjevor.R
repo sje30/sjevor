@@ -10,7 +10,7 @@ library(sjedmin)
 ## Until Tue 12 Mar 2002, it was crashing with more than 4000 cells.
 ## This was because of realloc problems in sje_readsites().
 
-d <- matrix(data = scan("~/mosaics/code/nadata_bad.txt"), ncol =2, byrow = T)
+d <- matrix(data = scan("./nadata_bad.txt"), ncol =2, byrow = T)
 plot(d[,1], d[,2])
 
 w <- 1:4500
