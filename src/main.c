@@ -108,7 +108,7 @@ readsites()
 
 
 /* read all sites, sort, and compute xmin, xmax, ymin, ymax */
-void sje_readsites(float *xpts, float *ypts, int npts)
+void sje_readsites(Sfloat *xpts, Sfloat *ypts, int npts)
 {
   int i;
   int pt;

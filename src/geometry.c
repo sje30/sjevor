@@ -5,7 +5,7 @@
 geominit()
 {
   struct Edge e;
-  float sn;
+  Sfloat sn;
 
   freeinit(&efl, sizeof e);
   nvertices = 0;
@@ -20,7 +20,7 @@ geominit()
 struct Edge *bisect(s1,s2)
      struct	Site *s1,*s2;
 {
-  float dx,dy,adx,ady;
+  Sfloat dx,dy,adx,ady;
   struct Edge *newedge;
 
   newedge = (struct Edge *) getfree(&efl);
@@ -55,7 +55,7 @@ struct Site *intersect(el1, el2, p)
 {
   struct	Edge *e1,*e2, *e;
   struct  Halfedge *el;
-  float d, xint, yint;
+  Sfloat d, xint, yint;
   int right_of_site;
   struct Site *v;
 
@@ -96,7 +96,7 @@ int right_of(el, p)
   struct Edge *e;
   struct Site *topsite;
   int right_of_site, above, fast;
-  float dxp, dyp, dxs, t1, t2, t3, yl;
+  Sfloat dxp, dyp, dxs, t1, t2, t3, yl;
 
   e = el -> ELedge;
   topsite = e -> reg[1];
@@ -150,10 +150,10 @@ endpoint(e, lr, s)
 }
 
 
-float dist(s,t)
+Sfloat dist(s,t)
      struct Site *s,*t;
 {
-  float dx,dy;
+  Sfloat dx,dy;
   dx = s->coord.x - t->coord.x;
   dy = s->coord.y - t->coord.y;
   return(sqrt(dx*dx + dy*dy));

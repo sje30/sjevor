@@ -8,7 +8,7 @@ line(){}
 circle(){}
 range(){}
 
-float pxmin, pxmax, pymin, pymax, cradius;
+Sfloat pxmin, pxmax, pymin, pymax, cradius;
 
 
 #undef sje_print_vorinfo	/* Define this if you want the output
@@ -132,7 +132,7 @@ out_triple(s1, s2, s3)
 
 plotinit()
 {
-  float dx,dy,d;
+  Sfloat dx,dy,d;
 
   dy = ymax - ymin;
   dx = xmax - xmin;
@@ -151,7 +151,7 @@ int clip_line(e)
      struct Edge *e;
 {
   struct Site *s1, *s2;
-  float x1,x2,y1,y2;
+  Sfloat x1,x2,y1,y2;
 
   if(e -> a == 1.0 && e ->b >= 0.0)
     {	s1 = e -> ep[1];

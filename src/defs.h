@@ -3,6 +3,8 @@
 #endif
 #define DELETED -2
 
+typedef double Sfloat;		/* from S.h? */
+
 int triangulate, sorted, plot, debug;
 
 struct	Freenode	{
@@ -17,11 +19,11 @@ char *getfree();
 /* char *malloc(); */ /* sje: comment out */
 char *myalloc();
 
-float xmin, xmax, ymin, ymax, deltax, deltay;
+Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
 
 
 struct Point	{
-float x,y;
+Sfloat x,y;
 };
 
 /* structure used both for sites and for vertices */
@@ -42,7 +44,7 @@ struct	Site	*bottomsite;
 
 
 struct Edge	{
-float		a,b,c;
+Sfloat		a,b,c;
 struct	Site 	*ep[2];
 struct	Site	*reg[2];
 int		edgenbr;
@@ -54,7 +56,7 @@ struct	Freelist efl;
 
 int has_endpoint(),right_of();
 struct Site *intersect();
-float dist();
+Sfloat dist();
 struct Point PQ_min();
 struct Halfedge *PQextractmin();
 struct Edge *bisect();
@@ -65,7 +67,7 @@ struct Edge	*ELedge;
 int		ELrefcnt;
 char		ELpm;
 struct	Site	*vertex;
-float		ystar;
+Sfloat		ystar;
 struct	Halfedge *PQnext;
 };
 
@@ -89,10 +91,10 @@ int PQempty();
 /******************************************************************/
 /* sje defines. */
 
-float	*vx, *vy; int     vnum, vnum_max;
+Sfloat	*vx, *vy; int     vnum, vnum_max;
 
 int lnum, lnum_max;
-float *la, *lb, *lc;
+Sfloat *la, *lb, *lc;
 int   *lb1, *lb2;
 
 int ednum, ednum_max;
@@ -151,7 +153,7 @@ int	*numvertices;
  * for site S. */
 
 
-float    sje_minx, sje_maxx, sje_miny, sje_maxy;
+Sfloat    sje_minx, sje_maxx, sje_miny, sje_maxy;
 /* min and max values of the field being processed. */
 
 

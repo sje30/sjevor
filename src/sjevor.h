@@ -15,13 +15,13 @@ extern "C" {
 
 /* Definitions for the routines that will be called from Octave. */
 
-void sjevor(float *xpts, float *ypts, float *dims, char *opts,
-	    float *info, int *sneighs,
-	    int npts);
+void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts, 
+	    Sfloat *info, int *sneighs, Sfloat *ias,
+	    int *npts);
 //%input xpts(npts), ypts(npts), dims(4)
 //%output info(npts,4), sneighs(npts, MAX_NUM_NEIGHS)
 
-void sjevoradd(float *xpts, float *ypts, float *temp, int npts);
+void sjevoradd(Sfloat *xpts, Sfloat *ypts, Sfloat *temp, int npts);
 //%input xpts(npts), ypts(npts)
 //%output temp(npts)  
 
@@ -38,19 +38,20 @@ void init_neighs(int npts);
 void find_neighs();
 void add_neigh(int i, int j);
 void write_neighs(int npts);
-void find_nnd(float *xpts, float *ypts, int npts,
-	      float *temp, int *sneighs);
+void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
+	      Sfloat *temp, int *sneighs);
 void find_vertices(int npts);
-void find_areas(int npts, float *temp);
+void find_areas(int npts, Sfloat *temp);
 void myfree(void *ptr);
-void sje_readsites(float *xpts, float *ypts, int npts);
+void sje_readsites(Sfloat *xpts, Sfloat *ypts, int npts);
 
+void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts, Sfloat *ias);
 
 /* To sort the neighbours by distance, we use qsort().  This uses
  * the following simple structure. */
 typedef struct keydist {
   int   key;			/* number of neighbour cell  */
-  float dist;			/* distance from reference cell. */
+  Sfloat dist;			/* distance from reference cell. */
 } Keydist;
 
 int keydist_cmp (Keydist *c1, Keydist *c2);

@@ -5,7 +5,7 @@
 PQinsert(he, v, offset)
      struct Halfedge *he;
      struct Site *v;
-     float 	offset;
+     Sfloat 	offset;
 {
   struct Halfedge *last, *next;
 
