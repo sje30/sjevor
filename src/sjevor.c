@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.4 $
-*** $Date: 2000/04/26 20:08:18 $
+*** $Revision: 1.5 $
+*** $Date: 2000/04/26 20:26:43 $
 ****************************************************************************/
 
 
@@ -25,6 +25,7 @@
 #include "defs.h"
 #include "sjevor.h"
 /* - Defines - */
+#define RAD_TO_DEG  57.29577951308232
 
 /* - Function Declarations - */
 
@@ -44,21 +45,25 @@ void voronoi(int triangulate, struct Site *(*nextsite)());
 /* - Start of Code  - */
 
 
-void sjevor(float *xpts, float *ypts, float *dims, char *opts,
-	    float *info, int *sneighs,
-	    int npts)
+void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
+	    Sfloat *info, int *sneighs, Sfloat *ias,
+	    int *pnpts)
 {
 
 
-  int i;
+  int i, npts;
   struct Site *(*next)();
 
+  char *opts;
+
+  opts = *popts;
 
   /* Set all pointers initially to be NULL; seems like sometimes they
    * could be initialised to rogue values.  Other pointers are okay,
    * since they will always get allocated.
    */
-  
+
+  npts = *pnpts;
   numvertices = NULL; verticeso = NULL;
   
   /* Parse options so that we set appropriate flags. */
@@ -66,10 +71,9 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
   sort_neighs    = (rindex(opts, 's')) ? 1:0;
   ignore_rejects = (rindex(opts, 'i')) ? 0:1;
 
-  /*
-  printf("need areas: %d sort_neighs %d ignore_rejects %d\n",
-	 need_areas, sort_neighs, ignore_rejects);
-  */
+  /* printf("need areas: %d sort_neighs %d ignore_rejects %d\n",
+     need_areas, sort_neighs, ignore_rejects); */
+
 
   
   /* Set up my data structures for remembering things. */
@@ -98,13 +102,13 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
    * lines and 286 edges. */
   
   
-  vx = (float*)calloc(vnum_max, sizeof(float));
+  vx = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
   if (! vx) { 
-    printf("could not allocate space for vx\n");
+    printf("could not allocate space for vx %d\n", vnum_max);
     exit(-1);
   }
 
-  vy = (float*)calloc(vnum_max, sizeof(float));
+  vy = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
   if (! vy) { 
     printf("could not allocate space for vy\n");
     exit(-1);
@@ -113,9 +117,9 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
 
 
 
-  la  = (float*)calloc(lnum_max, sizeof(float));
-  lb  = (float*)calloc(lnum_max, sizeof(float));
-  lc  = (float*)calloc(lnum_max, sizeof(float));
+  la  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
+  lb  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
+  lc  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
   lb1 = (int*)calloc(lnum_max, sizeof(int));
   lb2 = (int*)calloc(lnum_max, sizeof(int));
   lnum = 0;
@@ -180,7 +184,7 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
 
   /* Initialise the info array. */
   for (i=0; i<npts;i++) {
-    info[RIND(i,0,npts)] =  (float)(i + first_index); /* index num */
+    info[RIND(i,0,npts)] =  (Sfloat)(i + first_index); /* index num */
     info[RIND(i,1,npts)] = -1.00;	/* id of nearest neigh */
     info[RIND(i,2,npts)] = -1.00;	/* distance to nearest neigh */
     info[RIND(i,3,npts)] = -1.00;	/* area of polygon of this unit */
@@ -202,6 +206,7 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
   if (need_areas) {
     find_vertices(npts);
     find_areas(npts, info);
+    find_internal_angles(xpts, ypts, npts, ias);
   }
   
   /* Clear-up memory. */
@@ -274,7 +279,7 @@ void find_rejects(int npts)
 int out_of_bounds(int v)
 {
   /* Return 1 if vertice v is out of bounds. */
-  float x, y;
+  Sfloat x, y;
   x = vx[v]; y = vy[v];
 
 
@@ -381,8 +386,8 @@ void write_neighs(int npts)
 
 
 
-void find_nnd(float *xpts, float *ypts, int npts,
-	      float *info, int *sneighs)
+void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
+	      Sfloat *info, int *sneighs)
 {
   /* Find the NND for each datapoint.
    * We can also optionally sort the neighbours according to distance.
@@ -391,9 +396,9 @@ void find_nnd(float *xpts, float *ypts, int npts,
   FILE	*nndfp = NULL, *snfp = NULL;
   char  *file = "nnds";
   int   p;
-  float mindist, dist;
+  Sfloat mindist, dist;
   int   minidx, v;
-  float px, py,  dx, dy, dist2,  x, y;
+  Sfloat px, py,  dx, dy, dist2,  x, y;
   int n, i;
   int   num_sneighs;
   int	first_check;
@@ -462,7 +467,7 @@ void find_nnd(float *xpts, float *ypts, int npts,
       }
     }
 
-    dist = (float)sqrt((double)mindist);
+    dist = (Sfloat)sqrt((double)mindist);
     v = minidx + first_index;
     if (nndfp) fprintf(nndfp, "%.4f %d\n", dist, v);
 
@@ -545,7 +550,7 @@ void find_vertices(int npts)
 
   
   if (! numvertices) { 
-    printf("%s: could not allocate space for numvertices\n", __FUNCTION__);
+    printf("%s: could not allocate space for numvertices\n", "sjevorxx");
     exit(-1);
   }
   
@@ -686,7 +691,7 @@ void find_vertices(int npts)
 
 
 
-void find_areas(int npts, float *info)
+void find_areas(int npts, Sfloat *info)
 {
   /* Find the area of each valid polygon.
    * Print out the ordered vertices for each data point.
@@ -704,8 +709,8 @@ void find_areas(int npts, float *info)
    */
 
   int p, n, i, v, firstv, v1;
-  float xi, yi, xi1, yi1;
-  float sum, dsum;
+  Sfloat xi, yi, xi1, yi1;
+  Sfloat sum, dsum;
 
   firstv = 0;			/* keep compiler quiet. */
   
@@ -752,7 +757,67 @@ void find_areas(int npts, float *info)
 }
 
 
-void sjevoradd(float *xpts, float *ypts, float *temp, int npts)
+
+void find_internal_angles(Sfloat *xpts, Sfloat *ypts, int npts, Sfloat *ias)
+{
+  /* Compute the internal angles from each site to its vertices. */
+
+  /* If a site has a voronoi polygon with N vertices, we can make N
+   * triangles by taking any two contiguous vertices with the site.
+   * For each triangle, we measure the internal angle, theta, opposite
+   * the polygon edge.  The sum of these angles for a site is 360 degrees.
+   * Theta is an angle from a triangle, so is bounded in range (0,180).
+   *
+   * Since we know the coordinates of the three vertices of each
+   * triangle, we compute theta using the cosine rule. */
+   
+  int nextfree = 0;
+
+  int p, n, i, v1, v2;
+  Sfloat xi2, yi2, xi1, yi1, x, y, a,b2,c;
+  Sfloat theta;
+
+  for (p=0; p < npts; p++) {
+    /* Loop over each site. */
+
+    if (reject[p]) {
+      continue;
+    }
+
+    /* Find coordinates of central site. */
+    x = xpts[p]; y = ypts[p];
+    
+    n = numvertices[p];
+
+    for (i=0; i < n; i++) {
+      v1 = verticeso[VOIND(p,i)];
+      if (i == (n-1)) {
+	v2 = verticeso[VOIND(p,0)];
+      } else {
+	v2 = verticeso[VOIND(p,i+1)];
+      }
+
+      xi1 = vx[v1]; yi1 = vy[v1];
+      xi2 = vx[v2]; yi2 = vy[v2];
+
+
+      /* Find the lengths of each side of the triangle.  Note we only
+       * need b^2 rather than b for the side of the triangle opposite theta.
+       */
+	 
+      a  = sqrt( ((x-xi1)*(x-xi1)) +     ((y-yi1)*(y-yi1)) );
+      b2 =     ( ((xi2-xi1)*(xi2-xi1)) + ((yi2-yi1)*(yi2-yi1)) );
+      c  = sqrt( ((x-xi2)*(x-xi2)) +     ((y-yi2)*(y-yi2)) );
+      theta = acos( ((a*a) + (c*c) - b2) / (2*a*c)) * RAD_TO_DEG;
+
+      ias[nextfree++] = theta;
+    }
+  }
+  ias[nextfree++] = -1;		/* terminator mark. */
+
+}
+
+void sjevoradd(Sfloat *xpts, Sfloat *ypts, Sfloat *temp, int npts)
 {
   /* Test function to see that matwrap is working okay.
    * temp[i] = xpts[i] + ypts[i] */
