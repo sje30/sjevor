@@ -17,6 +17,7 @@ extern "C" {
 
 void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts, 
 	    Sfloat *info, int *sneighs, Sfloat *ias,
+	    int *del_ids2, Sfloat *del_lens2, Sfloat *del_angs2,
 	    int *npts);
 //%input xpts(npts), ypts(npts), dims(4)
 //%output info(npts,4), sneighs(npts, MAX_NUM_NEIGHS)

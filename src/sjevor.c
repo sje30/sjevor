@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.5 $
-*** $Date: 2000/04/26 20:26:43 $
+*** $Revision: 1.6 $
+*** $Date: 2000/06/22 15:32:10 $
 ****************************************************************************/
 
 
@@ -25,7 +25,6 @@
 #include "defs.h"
 #include "sjevor.h"
 /* - Defines - */
-#define RAD_TO_DEG  57.29577951308232
 
 /* - Function Declarations - */
 
@@ -47,6 +46,7 @@ void voronoi(int triangulate, struct Site *(*nextsite)());
 
 void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 	    Sfloat *info, int *sneighs, Sfloat *ias,
+	    int *del_ids2, Sfloat *del_lens2, Sfloat *del_angs2,
 	    int *pnpts)
 {
 
@@ -149,6 +149,13 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 
   sje_minx = dims[0]; sje_maxx = dims[1];
   sje_miny = dims[2]; sje_maxy = dims[3];
+
+  del_ids = del_ids2;
+  del_lens = del_lens2; del_angs = del_angs2;
+
+  del_idn = 0;			/* first free space */
+  del_idmax = 5 * 3 * npts;
+  
   
   /*************************************************************/
   /* initialise the data. */
@@ -208,6 +215,10 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
     find_areas(npts, info);
     find_internal_angles(xpts, ypts, npts, ias);
   }
+
+  del_ids2[del_idn] = -1;	/* Add -1 terminator so we know
+				 * how many Delaunay triangles were found.
+				 */
   
   /* Clear-up memory. */
   myfree(vx); myfree(vy);
