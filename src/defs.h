@@ -3,7 +3,7 @@
 #endif
 #define DELETED -2
 
-typedef double Sfloat;		/* from S.h? */
+#include <R.h>
 
 int triangulate, sorted, plot, debug;
 
@@ -118,9 +118,10 @@ int *numneighs;			/* numneighs[s] = number of neighbours of S. */
 int *neighs;			/* 2.d row-major array (normal C).
 				 *  neighs(NIND(S,N)) stores the Nth
 				 *  neighbour of site S.*/
+int max_num_neighs;
 
 /* S is the site number and N is the nth neighbour so far of that site. */
-#define NIND(S,N) ( (S*MAX_NUM_NEIGHS) + N)
+#define NIND(S,N) ( (S*max_num_neighs) + N)
 
 
 /* This is the index into the output `info'.  info is a 2-d array
@@ -163,18 +164,6 @@ int	*numvertices;
 
 Sfloat    sje_minx, sje_maxx, sje_miny, sje_maxy;
 /* min and max values of the field being processed. */
-
-
-/* Keep a record of pointers allocated by Fortune. */
-int num_fortune_pointers;
-
-/* For a dmin mosaic with 5000 pts, it used about 300 pointers, so this
- * should be more than enough.
- */
-#define MAX_FORTUNE_POINTERS 1000
-
-void *fortune_pointers[MAX_FORTUNE_POINTERS];
-
 
 /* Switches for controlling what we calculate in voronoi code. */
 int need_areas;
