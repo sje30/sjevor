@@ -29,6 +29,7 @@ if (need.newdmins) {
 
 ## Otherwise, don't worry about making new dmins...
 library(sjevor)
+invisible(.libPaths( Sys.getenv("MYRLIB")))
 library(deldir)                         #used for comparison.
 
 

@@ -1,8 +1,8 @@
 ## Extra tests for the Voronoi library.
 ## Tue 12 Mar 2002
 library(sjevor)
+invisible(.libPaths( Sys.getenv("MYRLIB")))
 library(deldir)
-##.libPaths("/home/stephen/langs/R/library") #to see my dmin library.
 print(1)
 ##library(sjedmin)
 print(2)
