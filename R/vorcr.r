@@ -1,7 +1,6 @@
 ## Do vorcr in R.
 ## Wed 07 Jun 2000
-## Can be loaded as a source file, as in:
-## source("/home/stephen/langs/R/vorr/vorcr.r")
+
 
 vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     ## Do Voronoi analysis and then return various useful bits of info.
@@ -12,49 +11,59 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     ## maximum number of polygon npts to allow.  for each line, there
     ## will be four values (x1,y1 x2, y2), so we have five times the
     ## number of lines to be safe.
-    max.num.neighs <- 18
-    max.del.tris <- 5           #see also sjevor.h -- these values should agree
-
-    polynpts1 <- integer(1); polynpts1[1] <- npts * 4 * 5
+    max.num.neighs <- 18                #conservative maximum.
+    max.del.tris <- 5           
+    iangles.len <- npts*10              #max num of internal angles (10*npts)
+    polynpts <- npts * 4 * 5            #normally npts*20 (4*5)
+    sje.debug <- 0                      #non-zero for debug.
     z <- .C("sjevor",
             as.double(x), as.double(y),
             as.double(dms),
             as.character(opts),
             info = double(npts*4),
             sneighs = integer(npts*max.num.neighs),
-            iangles = double(npts*10),
+            iangles = double(iangles.len),
             ## make space for 5n del tris; each triangle needs 3 items.
             delids  = integer(npts*max.del.tris*3),
             dellens = double(npts*max.del.tris*3),
             delangs = double(npts*max.del.tris*3),
-            polypts = double(polynpts1[1]), #4 for each line: (x1,y1, x2,y2)
-            polynpts = as.integer(polynpts1),
+            polypts = double(polynpts), #4 for each line: (x1,y1, x2,y2)
             vertices.x = double(max.del.tris*npts),
             vertices.y = double(max.del.tris*npts),
             vertices = integer(npts*max.num.neighs),
-            as.integer(npts)
+            as.integer(npts),
+            limits = as.integer(c(iangles.len, max.del.tris,
+              polynpts, max.num.neighs)),
+            as.integer(c(sje.debug))
             )
 
     info <- z$info; dim(info) <- c(npts,4)
     colnames(info) <- c("id", "nn id", "dist", "area")
 
-
     sneighs <- z$sneighs;
-    maxnumneighs <- length(sneighs) / npts;
-    dim(sneighs) <- c(npts,maxnumneighs)
+    dim(sneighs) <- c(npts,max.num.neighs)
     ## find the number of neighbours of each site.
     numneighs <- apply(sneighs,1, function (x) length(x[x>0]))
 
+    ## Now we can cut off any columns that are all -1, just in
+    ## case max.num.neighs was a big overestimate.
+    sneighs <- sneighs[,1:max(numneighs)]
+
     ## can now shorten the list of internal angles, since their should
     ## be the same as sum(numneighs).
-    iangles <- z$iangles[1:sum(numneighs)]
+    iangles.last <- which(z$iangles == -1) -1
+    stopifnot(iangles.last == sum(numneighs))
+    iangles <- z$iangles[1:iangles.last]
     rejects <- (info[,3] < 0)
     validdists <- info[!rejects,3]
     meannnd <- mean(validdists)
     sdnnd   <- sqrt(var(validdists))
     cr <-  meannnd / sdnnd
 
-
+    ## Check that the list of nearest neighbours in the info structure
+    ## is identical to the 1st nearest neighbour.
+    stopifnot(identical((all.equal(sneighs[,1], info[,2])),TRUE))
+    
     ## Process Delaunay triangle information.
     delidmax <- which(z$delids == -1) -1
 
@@ -68,7 +77,7 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     delangs <- z$delangs[1:delidmax]
     dim(delangs) <- c(3, delidmax/3); delangs <- t(delangs);
 
-    polypts <- z$polypts[1:z$polynpts]
+    polypts <- z$polypts[1:z$limits[3]]
     vertices.xy <- cbind(z$vertices.x, z$vertices.y)
 
 
@@ -233,8 +242,8 @@ ianglesplot <- function(angles, show=TRUE)  {
 
 del.plot <- function(v) {
   ## Plot the Delaunay triangulation.
-  ## pts is the 2d set of data points; v is the voronoi information from
-  ## that data set.
+  ## TODO: this is not working for the toroidal version -- some points
+  ## have been deleted, or they will need remapping to their real id numbers.
 
   pts <- v$pts
   ## First draw the sites.
