@@ -102,6 +102,88 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     res
 }
 
+vorcrb <- function(x, y, xl, xh, yl, yh, fuzz = 0, f=0.3, opts = 'nags') {
+  ## Toroidal boundary conditions...
+  ## This format was copied from vorb_c.m
+  ## TODO: del.plot doesn't work..., but on the other hand, the vorcr.polygons
+  ## routine looks very nice...!
+  
+  ht <- yh - yl; wid <- xh - xl;
+  ncells <- length(x)
+
+  ##pdy = positive dy, ndy = negative dy.
+  pdy  <- ht + numeric(ncells); ndy <- -pdy;
+
+  pdx  <- wid + numeric(ncells); ndx  <- -pdx;
+  emp  <- numeric(ncells)
+  data <- cbind(x,y);			# original data points.
+  data1 <- data + cbind(emp, pdy);
+  data2 <- data + cbind(emp, ndy);
+  
+  data3 <- data + cbind(ndx, emp);
+  data4 <- data + cbind(pdx, emp);
+  
+  data5 <- data + cbind(ndx, pdy);
+  data6 <- data + cbind(pdx, pdy);
+  
+  data7 <- data + cbind(ndx, ndy);
+  data8 <- data + cbind(pdx, ndy);
+  
+  ndata <- rbind(data, data1, data2, data3, data4, data5, data6, data7, data8)
+
+  fxl <- xl - (f*wid); fyl <- yl - (f*ht);
+  fxh <- xh + (f*wid); fyh <- yh + (f*ht);
+
+  ids <- c(1:ncells, 1:ncells, 1:ncells, 1:ncells, 1:ncells, 1:ncells, 1:ncells,
+           1:ncells, 1:ncells)
+
+  pass <- ((ndata[,1] >= fxl) & (ndata[,1] <= fxh) & 
+           (ndata[,2] >= fyl) & (ndata[,2] <= fyh));
+  ndata <- ndata[which(pass),];
+  ids   <- ids[which(pass)];	# keep only cell IDs that are within border.
+
+  v <- vorcr(ndata[,1], ndata[,2], fxl, fxh, fyl, fyh, fuzz, opts)
+
+  ## now post-process v a bi, by removing the information for cells that we
+  ## don't care about.
+  v$info <- v$info[1:ncells,]
+  v$info[,2] <- ids[v$info[,2]]
+  
+  v$pts <- v$pts[1:ncells,]
+
+  v$neighs <- v$neighs[1:ncells,]
+  excess <- which(v$neighs>ncells, arr.ind=T)
+  v$neighs[excess] <- ids[v$neighs[excess]]
+
+  v$rejects <- v$rejects[1:ncells]
+  v$numneighs <- v$numneighs[1:ncells]
+  ## little sanity check -- nearest neighbours should be the first neighbour.
+  stopifnot(v$info[,2] == v$neighs[,1])
+
+  ## TODO: delaunay triangles do not yet plot.
+  v
+}
+
+
+vor.showpts <- function(v, n=10, max.neighs=NULL) {
+  ## View the Voronoi tesselation, and click on cells to show their neighbours.
+  ## N is the number of cells to select.
+  ## MAX.NEIGHS, if a number, is the number of neighbours to show.  e.g. set to 1
+  ## to show just the nearest neighbours.
+  first <- TRUE
+  for (i in 1:n) {
+    if (first) {
+      plot(v); first <- FALSE
+    }
+    id <- identify(v$pts[,1], v$pts[,2], n=1)
+    neighs <- v$neighs[id,]
+    neighs <- neighs[which(neighs>0)]
+    if (is.numeric(max.neighs) && (length(neighs)> max.neighs))
+      neighs <- neighs[1:max.neighs]
+    points(v$pts[neighs,1], v$pts[neighs,2], pch=19)
+  }
+}
+
 vorcr.dellens <- function(vor, idxs=NULL) {
   ## Helper function to get the Delaunay Segment lengths.
   ##
