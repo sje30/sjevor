@@ -12,6 +12,24 @@ range(){}
 Sfloat pxmin, pxmax, pymin, pymax, cradius;
 
 
+int del_idn, del_idmax;
+int *del_ids;			/* pointer where Delaunay info can be stored.*/
+Sfloat *del_lens, *del_angs;
+int ednum, ednum_max;
+int *el, *ev1, *ev2;
+
+Sfloat	*vx, *vy; int     vnum, vnum_max;
+
+int lnum, lnum_max;
+Sfloat *la, *lb, *lc;
+int   *lb1, *lb2;
+
+int poly_idn, poly_idmax;	/* current and max allowed polygon number */
+Sfloat *poly_pts;
+
+extern int triangulate, sorted, plot, debug;
+extern Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
+
 #undef sje_print_vorinfo	/* Define this if you want the output
 				 * to stdout that is normally shown. */
 out_bisector(e)

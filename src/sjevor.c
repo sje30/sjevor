@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.10 $
-*** $Date: 2002/02/15 16:45:04 $
+*** $Revision: 1.11 $
+*** $Date: 2002/03/13 00:00:21 $
 ****************************************************************************/
 
 
@@ -25,6 +25,86 @@
 #include "defs.h"
 #include "sjevor.h"
 /* - Defines - */
+
+int first_index;		/* for 0/1 offset problem when printing out. */
+int ignore_rejects;		/* non-zero if we want to calculate nnd
+				 * and area for cells at the border. */
+
+
+int *numneighs;			/* numneighs[s] = number of neighbours of S. */
+int *neighs;			/* 2.d row-major array (normal C).
+				 *  neighs(NIND(S,N)) stores the Nth
+				 *  neighbour of site S.*/
+int max_num_neighs;
+
+/* S is the site number and N is the nth neighbour so far of that site. */
+#define NIND(S,N) ( (S*max_num_neighs) + N)
+
+
+/* This is the index into the output `info'.  info is a 2-d array
+ * such that info[RIND(S,N,NPTS)] stores the Nth piece of info for site S.
+ * This is ordered column-wise, since we return this to Octave.
+ */
+/* S is the site number and N is the nth output value for that site. */
+#define RIND(S,N,NPTS) ( (N*NPTS) + S)
+
+
+
+/* Indexing into the sorted neighs array. sneighs[SNIND(S,N,NPTS)]
+ * S is the site number and N is the nth nearest neighbour of that site.
+ * The number of sites, NPTS, is needed since this is a column-major array that * gets returned to Octave.
+ */
+#define SNIND(S,N,NPTS) ( (N*NPTS) + S)
+
+/* vertices1[VIND(S,N)] stores the index number of the Nth vertice found
+ * for site S.  Both vertices1, vertices2 are 2-d row-major arrays.
+ */
+int max_numvertices;
+#define VIND(S,V) ( (S*max_numvertices) + V)
+
+
+
+int *verticeso;
+int max_numvertices_o;
+#define VOIND(S,V) ( (S*max_numvertices) + V)
+/* verticeso[VOIND(S,N)] stores the index number of the Nth (ordered)
+ * vertice found for site S.
+ */
+
+
+int	*numvertices;
+/* 1-d array: numvertices[s] stores the number of vertices found so far
+ * for site S. */
+
+
+Sfloat    sje_minx, sje_maxx, sje_miny, sje_maxy;
+/* min and max values of the field being processed. */
+
+/* Switches for controlling what we calculate in voronoi code. */
+int need_areas;
+int sort_neighs;
+
+int     *reject;		/* reject[s] is 1 iff site S is a reject. */
+
+extern int		nsites;
+extern int		siteidx;
+extern struct 	Freelist sfl;
+extern struct	Site	*sites;
+extern int triangulate, sorted, plot, debug;
+extern int del_idn, del_idmax;
+extern int *del_ids;   /* pointer where Delaunay info can be stored.*/
+extern Sfloat *del_lens, *del_angs;
+extern int ednum, ednum_max;
+extern int *el, *ev1, *ev2;
+extern Sfloat	*vx, *vy; extern int vnum, vnum_max;
+
+extern int lnum, lnum_max;
+extern Sfloat *la, *lb, *lc;
+extern int   *lb1, *lb2;
+
+extern int poly_idn, poly_idmax; /* current and max allowed polygon number */
+extern Sfloat *poly_pts;
+
 
 /* - Function Declarations - */
 

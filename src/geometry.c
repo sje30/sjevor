@@ -2,6 +2,14 @@
 #include "defs.h"
 #include <math.h>
 
+int		nvertices;
+Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
+int nedges;
+struct	Freelist efl;
+
+extern int nsites;
+extern struct Freelist sfl;
+extern int sqrt_nsites;
 geominit()
 {
   struct Edge e;

@@ -2,6 +2,10 @@
 #include "defs.h"
 #include <stdio.h>
 #include <stdlib.h>		/* stop malloc library compile error. */
+
+int		sqrt_nsites;
+extern int siteidx;
+
 void freeinit(fl, size)
      struct	Freelist *fl;
      int	size;

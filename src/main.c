@@ -17,7 +17,13 @@
 struct Site *readone();
 struct Site *nextone();
 
+int triangulate, sorted, plot, debug;
+struct	Site	*sites;
+int		nsites;
+int		siteidx;
+struct 	Freelist sfl;
 
+extern Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
 #ifdef NEED_MAIN_ROUTINE
 main(argc,argv) 
      char **argv; 

@@ -1,7 +1,16 @@
 #
 #include "defs.h"
 
+struct   Freelist	hfl;
+struct	Halfedge *ELleftend, *ELrightend;
+int 	ELhashsize;
+struct	Halfedge **ELhash;
+
 int ntry, totalsearch;
+
+extern int sqrt_nsites;
+extern Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
+extern struct Site *bottomsite;
 
 ELinitialize()
 {

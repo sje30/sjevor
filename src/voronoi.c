@@ -1,6 +1,8 @@
 #
 #include "defs.h"
 
+extern struct	Halfedge *ELleftend, *ELrightend;
+struct	Site	*bottomsite;
 
 /* implicit parameters: nsites, sqrt_nsites, xmin, xmax, ymin, ymax,
    deltax, deltay (can all be estimates).

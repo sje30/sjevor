@@ -1,6 +1,15 @@
 #
 #include "defs.h"
 
+int PQhashsize;
+struct	Halfedge *PQhash;
+struct	Halfedge *PQfind();
+int PQcount;
+int PQmin;
+int PQempty();
+
+extern int sqrt_nsites;
+extern Sfloat xmin, xmax, ymin, ymax, deltax, deltay;
 
 PQinsert(he, v, offset)
      struct Halfedge *he;
