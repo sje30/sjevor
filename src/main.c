@@ -71,7 +71,7 @@ struct Site *nextone()
 {
   struct Site *s;
 
-  printf("sje: nextone\n");
+  /*printf("sje: nextone\n");*/
   if(siteidx < nsites)
     {	s = &sites[siteidx];
     siteidx += 1;
@@ -113,7 +113,6 @@ void sje_readsites(float *xpts, float *ypts, int npts)
   int i;
   int pt;
   nsites=0;
-  printf("sje_readsites\n");
   sites = (struct Site *) myalloc(4000*sizeof *sites);
 
   for(pt=0; pt < npts; pt++) {
