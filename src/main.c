@@ -69,8 +69,9 @@ int scomp(s1,s2)
 /* return a single in-storage site */
 struct Site *nextone()
 {
-  printf("sje: nextone\n");
   struct Site *s;
+
+  printf("sje: nextone\n");
   if(siteidx < nsites)
     {	s = &sites[siteidx];
     siteidx += 1;

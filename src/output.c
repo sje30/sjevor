@@ -27,12 +27,24 @@ out_bisector(e)
   if(debug)
     printf("line(%d) %gx+%gy=%g, bisecting %d %d\n", e->edgenbr,
 	   e->a, e->b, e->c, e->reg[le]->sitenbr, e->reg[re]->sitenbr);
+
+
+  la[lnum] = e->a;
+  lb[lnum] = e->b;
+  lc[lnum] = e->c;
+  lb1[lnum] = e->reg[le]->sitenbr;
+  lb2[lnum] = e->reg[re]->sitenbr;
+
+  lnum++;  
+  
 }
 
 
 out_ep(e)
      struct Edge *e;
 {
+
+
   if(!triangulate & plot) 
     clip_line(e);
   if(!triangulate & !plot)
@@ -40,11 +52,18 @@ out_ep(e)
     printf(" %d ", e->ep[le] != (struct Site *)NULL ? e->ep[le]->sitenbr : -1);
     printf("%d\n", e->ep[re] != (struct Site *)NULL ? e->ep[re]->sitenbr : -1);
     };
+  
+  el[ednum] = e ->edgenbr;
+  ev1[ednum] = e->ep[le] != (struct Site *)NULL ? e->ep[le]->sitenbr : -1;
+  ev2[ednum] = e->ep[re] != (struct Site *)NULL ? e->ep[re]->sitenbr : -1;
+  ednum++;
 }
 
 out_vertex(v)
      struct Site *v;
 {
+  vx[vnum] = v->coord.x;   vy[vnum] = v->coord.y; vnum++;
+  
   if(!triangulate & !plot &!debug)
     printf ("v %f %f\n", v->coord.x, v->coord.y);
   if(debug)

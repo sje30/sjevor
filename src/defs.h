@@ -88,3 +88,49 @@ int PQempty();
 
 /* sje defines. */
 float	*vx, *vy; int     vnum, vnum_max;
+
+int lnum, lnum_max;
+float *la, *lb, *lc;
+int   *lb1, *lb2;
+
+int ednum, ednum_max;
+int *el, *ev1, *ev2;
+
+int	*numpoints;
+int     *reject;		/* reject[i] is 1 iff site i is a reject. */
+
+
+int first_index;		/* for 0/1 offset problem when printing out. */
+
+
+int *numneighs;
+#define MAX_NUM_NEIGHS 13
+int *neighs;
+
+/* S is the site number and N is the nth neighbour so far of that site. */
+#define NIND(S,N) ( (S*MAX_NUM_NEIGHS) + N)
+
+
+/* S is the site number and N is the nth output value for that site. */
+#define RIND(S,N,NPTS) ( (N*NPTS) + S)
+
+
+int ignore_rejects;
+
+/* Indexing into the sorted neighs array.
+ * S is the site number and N is the nth nearest neighbour of that site. */
+#define SNIND(S,N,NPTS) ( (N*NPTS) + S)
+
+/* S is the site number and V is the vth vertice for that site. */
+int max_numvertices = 20;	/*  TODO just a guess! */
+#define VIND(S,V) ( (S*max_numvertices) + V)
+
+
+
+
+int *verticeso;
+int max_numvertices_o = 20;
+/* S is the site number and V is the vth vertice for that site. */
+#define VOIND(S,V) ( (S*max_numvertices) + V)
+
+int	*numvertices;
