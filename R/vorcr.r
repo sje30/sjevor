@@ -68,7 +68,8 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
       rejtri <- apply(anyrej, 1, any)
     } else {
       ## accept all delauanay triangles.
-      rejtri <- logical(length = (length(anyrej)/3))# all elements FALSE.
+      ## check that delidmax below is the right thing to do...
+      rejtri <- logical(length = (delidmax/3))# all elements FALSE.
     }
 
     delacc <- which(!rejtri)            #ids of accepted triangles.
