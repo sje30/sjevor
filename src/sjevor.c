@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.12 $
-*** $Date: 2003/02/27 17:57:08 $
+*** $Revision: 1.13 $
+*** $Date: 2003/08/09 16:34:15 $
 ****************************************************************************/
 
 
@@ -47,6 +47,11 @@ int max_num_neighs;
  */
 /* S is the site number and N is the nth output value for that site. */
 #define RIND(S,N,NPTS) ( (N*NPTS) + S)
+#define INFO_AREA 3
+#define INFO_NND 2
+#define INFO_IDN 1
+#define INFO_ID  0
+
 
 
 
@@ -265,10 +270,10 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 
   /* Initialise the info array. */
   for (i=0; i<npts;i++) {
-    info[RIND(i,0,npts)] =  (Sfloat)(i + first_index); /* index num */
-    info[RIND(i,1,npts)] = -1.00;	/* id of nearest neigh */
-    info[RIND(i,2,npts)] = -1.00;	/* distance to nearest neigh */
-    info[RIND(i,3,npts)] = -1.00;	/* area of polygon of this unit */
+    info[RIND(i,INFO_ID,npts)] =  (Sfloat)(i + first_index); /* index num */
+    info[RIND(i,INFO_IDN,npts)] = -1.00;	/* id of nearest neigh */
+    info[RIND(i,INFO_NND,npts)] = -1.00;	/* distance to nearest neigh */
+    info[RIND(i,INFO_AREA,npts)] = -1.00;	/* area of polygon of this unit */
   }
 
 
@@ -541,7 +546,7 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 		 __FILE__, __LINE__, n);
 	}
 	dists[n].key = i + first_index;
-	dists[n].dist = dist2;
+	dists[n].dist = dist2;	/* n.b. these values are squared. */
       }
     }
 
@@ -549,8 +554,8 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
     v = minidx + first_index;
     if (nndfp) fprintf(nndfp, "%.4f %d\n", dist, v);
 
-    info[RIND(p,1,npts)] = v;	/* i.d. of nearest neigh */
-    info[RIND(p,2,npts)] = dist; /* distance to nearest neigh */
+    info[RIND(p,INFO_IDN,npts)] = v;	/* i.d. of nearest neigh */
+    info[RIND(p,INFO_NND,npts)] = dist; /* distance to nearest neigh */
 
 
     if (sort_neighs) {
@@ -563,18 +568,27 @@ void find_nnd(Sfloat *xpts, Sfloat *ypts, int npts,
 	sneighs[SNIND(p,i,npts)] = dists[i].key;
       }
 
-      if (info[RIND(p,1,npts)] != sneighs[SNIND(p, 0, npts)]) {
+      if (info[RIND(p, INFO_IDN, npts)] != sneighs[SNIND(p, 0, npts)]) {
 
 	/* We have a conflict between the nearest neighbours stored in
-	 * *info and *sneighs.  In this case, we check that the 2nd
-	 * neighbour is really the closest. R also has code to check
-	 * for this case. */
-	if ( (info[RIND(p,1,npts)] == sneighs[SNIND(p, 1, npts)]) &&
-	     fabs(dists[0].dist - dists[1].dist) <= 1e-9) {
-	  /* 2nd element is also the nearest neighbour, so update info. */
-	  info[RIND(p,1,npts)] = sneighs[SNIND(p, 0, npts)];
+	 * *info and *sneighs.  This can happen when more than one
+	 * neighbour has the same NND (e.g. in a triangular lattice,
+	 * all six neighbours are the same distance apart.  So just
+	 * check that the NND is okay, and then update info.
+	 */
+	
+	if ( fabs(sqrt(dists[0].dist) - info[RIND(p, INFO_NND,npts)]) <= 1e-9) {
+	  info[RIND(p, INFO_IDN, npts)] = dists[0].key;
 	} else {
 	  Rprintf("Call the Eglen hotline, as we're in trouble\n");
+	  printf("info: %d %f\n",
+		 info[RIND(p, INFO_IDN, npts)],
+		 info[RIND(p, INFO_NND, npts)]);
+	  printf("%.4f %d\n", dist, v);
+	  
+	  for(i=0; i<numneighs[p]; i++) {
+	    printf("%d %d %f\n", i, dists[i].key, dists[i].dist);
+	  }
 	}
       }
       if (snfp) fputs("\n", snfp);
@@ -839,7 +853,7 @@ void find_areas(int npts, Sfloat *info)
 			  * on ordering of coordinates. */
 
     /*v = p+first_index;*/
-    info[RIND(p,3,npts)] = sum;	/* area of polygon */
+    info[RIND(p, INFO_AREA,npts)] = sum;	/* area of polygon */
   }
   
 }
