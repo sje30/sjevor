@@ -105,7 +105,7 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
                 delacc = delacc, delrej = delrej, polypts = polypts,
                 numneighs = numneighs,
                 vertices.xy = vertices.xy,
-                vertices= matrix(z$vertices, nrow=npts, byrow=T))
+                vertices= matrix(z$vertices, nrow=npts, byrow=TRUE))
 
     class(res) <- "sjevor"
     res
@@ -161,7 +161,7 @@ vorcrb <- function(x, y, xl, xh, yl, yh, fuzz = 0, f=0.3, opts = 'nags') {
   v$pts <- v$pts[1:ncells,]
 
   v$neighs <- v$neighs[1:ncells,]
-  excess <- which(v$neighs>ncells, arr.ind=T)
+  excess <- which(v$neighs>ncells, arr.ind=TRUE)
   v$neighs[excess] <- ids[v$neighs[excess]]
 
   v$rejects <- v$rejects[1:ncells]
@@ -225,7 +225,7 @@ vorcr.dellens <- function(vor, idxs=NULL) {
 ianglesplot <- function(angles, show=TRUE)  {
   ## Produce a histogram of the internal angles of each Voronoi polygon.
   abins <- seq(0,180, by=5)
-  ah <- hist(angles, breaks=abins, plot=F)
+  ah <- hist(angles, breaks=abins, plot=FALSE)
   
   cdf <- cumsum(ah$counts)/sum(ah$counts)
 
@@ -271,7 +271,8 @@ del.plot <- function(v) {
 }
 
 
-plot.sjevor <- function(v, show.pts=T, show.areas=F, show.rejects=F, ...) {
+plot.sjevor <- function(v, show.pts=TRUE, show.areas=FALSE,
+                        show.rejects=FALSE, ...) {
 
   ## line-based approach to doing the plot.  We take the vector
   ## v$polypts; each set of 4 consecutive values is (x0, y0, x1, y1)
