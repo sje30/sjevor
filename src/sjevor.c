@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.7 $
-*** $Date: 2000/06/23 16:45:18 $
+*** $Revision: 1.8 $
+*** $Date: 2002/01/04 01:57:24 $
 ****************************************************************************/
 
 
@@ -68,10 +68,10 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   numvertices = NULL; verticeso = NULL;
   
   /* Parse options so that we set appropriate flags. */
-  need_areas     = (rindex(opts, 'a')) ? 1:0;
-  sort_neighs    = (rindex(opts, 's')) ? 1:0;
-  ignore_rejects = (rindex(opts, 'i')) ? 0:1;
-  plot           = (rindex(opts, 'p')) ? 0:1;
+  need_areas     = (strchr(opts, 'a')) ? 1:0;
+  sort_neighs    = (strchr(opts, 's')) ? 1:0;
+  ignore_rejects = (strchr(opts, 'i')) ? 0:1;
+  plot           = (strchr(opts, 'p')) ? 0:1;
 
   /* printf("need areas: %d sort_neighs %d ignore_rejects %d\n",
      need_areas, sort_neighs, ignore_rejects); */
