@@ -1,7 +1,7 @@
 #
 #include "defs.h"
 #include <stdio.h>
-
+#include <stdlib.h>		/* stop malloc library compile error. */
 void freeinit(fl, size)
      struct	Freelist *fl;
      int	size;
