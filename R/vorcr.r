@@ -3,10 +3,6 @@
 ## Can be loaded as a source file, as in:
 ## source("/home/stephen/langs/R/vorr/vorcr.r")
 
-
-dyn.load("/home/stephen/langs/R/vorr/libvor.so")
-
-
 vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     ## Do Voronoi analysis and then return various useful bits of info.
     
@@ -38,7 +34,9 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
             vertices = integer(npts*max.num.neighs),
             as.integer(npts)
             )
+
     info <- z$info; dim(info) <- c(npts,4)
+    colnames(info) <- c("id", "nn id", "dist", "area")
 
 
     sneighs <- z$sneighs;
@@ -176,10 +174,9 @@ del.plot <- function(pts, v) {
 }
 
 
-vor.plot <- function(pts, v) {
-
+vor.plot <- function(pts, v, show.pts=T, show.areas=F, show.rejects=F) {
   ## line-based approach to doing the plot.  We take the vector
-  ## v$polypts and extract separately the x (odd-numbered)and y
+  ## v$polypts and extract separately the x (odd-numbered) and y
   ## (even-numbered) values.  After every second x (or y) value we
   ## then insert a NA value to cause `lines' to break after every line segment.
 
@@ -195,8 +192,21 @@ vor.plot <- function(pts, v) {
   xs.2 <- as.vector(rbind(matrix(xs, nrow=2, byrow=F), rep(NA,np/4)))
   ys.2 <- as.vector(rbind(matrix(ys, nrow=2, byrow=F), rep(NA,np/4)))
 
-  ##plot(xs.2, ys.2, type="n")
-  plot(pts[,1], pts[,2], pch=19)
+  if (show.areas) {
+    plot(pts[,1], pts[,2], type="n", asp=1, xlab="", ylab="")
+    text(pts[,1], pts[,2], signif(v$info[,4],3))
+  } else {
+    if (show.pts) {
+      plot(pts[,1], pts[,2], pch=1, asp=1, xlab="", ylab="")
+      if (show.rejects) {
+        rejects <- which(v$info[,4] < 0)
+        points(pts[rejects,1], pts[rejects,2], pch=19, asp=1)
+      }
+    } else {
+      ## don't want to see points
+      plot(pts[,1], pts[,2], type="n",asp=1, xlab="", ylab="")
+    }
+  }
   lines(xs.2, ys.2)
 }
 
@@ -218,6 +228,3 @@ vorcr.polygons <- function(pts, v) {
     }
   }
 }
-
-
-## dyn.unload("/home/stephen/langs/R/vorr/libvor.so")
