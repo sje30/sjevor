@@ -12,12 +12,14 @@ extern "C" {
 /* This is the expected maximum number of neighbours. */
 /* 18 should be a conservative number, 13 normally works okay. */
 #define MAX_NUM_NEIGHS 18
-
+#define MAX_DEL_TRIS 5
 /* Definitions for the routines that will be called from Octave. */
 
 void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts, 
 	    Sfloat *info, int *sneighs, Sfloat *ias,
 	    int *del_ids2, Sfloat *del_lens2, Sfloat *del_angs2,
+	    Sfloat *poly_pts2, int *poly_npts,
+	    Sfloat *vx, Sfloat *vy, int *vertices,
 	    int *npts);
 //%input xpts(npts), ypts(npts), dims(4)
 //%output info(npts,4), sneighs(npts, MAX_NUM_NEIGHS)

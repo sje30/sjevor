@@ -106,6 +106,8 @@ int del_idn, del_idmax;
 int *del_ids;			/* pointer where Delaunay info can be stored.*/
 Sfloat *del_lens, *del_angs;
 
+int poly_idn, poly_idmax;	/* current and max allowed polygon number */
+Sfloat *poly_pts;
 int     *reject;		/* reject[s] is 1 iff site S is a reject. */
 
 

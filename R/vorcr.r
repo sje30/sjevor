@@ -12,18 +12,30 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     
     dms <- c(xl, xh, yl, yh)
     npts <- length(x)
+
+    ## maximum number of polygon npts to allow.  for each line, there
+    ## will be four values (x1,y1 x2, y2), so we have five times the
+    ## number of lines to be safe.
+    max.num.neighs <- 18
+    max.del.tris <- 5           #see also sjevor.h -- these values should agree
+
+    polynpts1 <- integer(1); polynpts1[1] <- npts * 4 * 5
     z <- .C("sjevor",
             as.double(x), as.double(y),
             as.double(dms),
             as.character(opts),
             info = double(npts*4),
-            sneighs = integer(npts*18),
+            sneighs = integer(npts*max.num.neighs),
             iangles = double(npts*10),
-
             ## make space for 5n del tris; each triangle needs 3 items.
-            delids  = integer(npts*15),
-            dellens  = double(npts*15),
-            delangs = double(npts*15),
+            delids  = integer(npts*max.del.tris*3),
+            dellens = double(npts*max.del.tris*3),
+            delangs = double(npts*max.del.tris*3),
+            polypts = double(polynpts1[1]), #4 for each line: (x1,y1, x2,y2)
+            polynpts = as.integer(polynpts1),
+            vertices.x = double(max.del.tris*npts),
+            vertices.y = double(max.del.tris*npts),
+            vertices = integer(npts*max.num.neighs),
             as.integer(npts)
             )
     info <- z$info; dim(info) <- c(npts,4)
@@ -58,6 +70,9 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     delangs <- z$delangs[1:delidmax]
     dim(delangs) <- c(3, delidmax/3); delangs <- t(delangs);
 
+    polypts <- z$polypts[1:z$polynpts]
+    vertices.xy <- cbind(z$vertices.x, z$vertices.y)
+
 
     ## Normally ignore.rejects is true so that we reject triangles
     ## that involve reject sites.
@@ -78,8 +93,10 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     list(info = info, neighs = sneighs, cr = cr, meannnd = meannnd,
          sdnnd = sdnnd, rejects = rejects, iangles = iangles,
          delids = delids, dellens = dellens, delangs = delangs,
-         delacc = delacc, delrej = delrej,
-         numneighs = numneighs)
+         delacc = delacc, delrej = delrej, polypts = polypts,
+         numneighs = numneighs,
+         vertices.xy = vertices.xy,
+         vertices= matrix(z$vertices, nrow=npts, byrow=T))
 }
 
 vorcr.dellens <- function(vor, idxs=NULL) {
@@ -158,6 +175,49 @@ del.plot <- function(pts, v) {
   par(col = "black")                    #reset to usual colour.
 }
 
+
+vor.plot <- function(pts, v) {
+
+  ## line-based approach to doing the plot.  We take the vector
+  ## v$polypts and extract separately the x (odd-numbered)and y
+  ## (even-numbered) values.  After every second x (or y) value we
+  ## then insert a NA value to cause `lines' to break after every line segment.
+
+  ## e.g. given polypts = ( 1 2 3 4 5 6 7 8 ...)
+  ## xs = (1 3 5 7 ...), ys = (2 4 6 8 ...)
+  ## xs.2 = (1 3 NA 5 7 NA ...), ys.2 = (2 4 NA 6 8 NA ...)
+  ## so that a line segment is drawn from (1,2) to (3,4)
+  ## then another segment from (5,6) to (7,8) and so on...
+  
+  np <- length(v$polypts)
+  xs <- v$polypts[seq(from=1, to=np, by=2)]
+  ys <- v$polypts[seq(from=2, to=np, by=2)]
+  xs.2 <- as.vector(rbind(matrix(xs, nrow=2, byrow=F), rep(NA,np/4)))
+  ys.2 <- as.vector(rbind(matrix(ys, nrow=2, byrow=F), rep(NA,np/4)))
+
+  ##plot(xs.2, ys.2, type="n")
+  plot(pts[,1], pts[,2], pch=19)
+  lines(xs.2, ys.2)
+}
+
+vorcr.polygons <- function(pts, v) {
+  ## For each site, find its surrounding polygon and plot it.  This is
+  ## a slower method than vor.plot(), but it shows how to use the vertice
+  ## information associated with each site.
+
+  ## Check that the vertices were created.
+  if (!any(v$vertices > 0)) {
+    stop("no vertice information for each site was stored. Use option a")
+  }
+  npts <- dim(pts)[1]
+  plot(pts)
+  for (i in 1:npts) {
+    nverts <- v$numneighs[i]
+    if (nverts >0) {
+      polygon(v$vertices.xy[v$vertices[i,1:nverts],])
+    }
+  }
+}
 
 
 ## dyn.unload("/home/stephen/langs/R/vorr/libvor.so")

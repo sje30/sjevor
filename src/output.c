@@ -56,9 +56,10 @@ out_ep(e)
      struct Edge *e;
 {
 
-
-  if(!triangulate & plot) 
-    clip_line(e);
+  /* sje: always clip_line to get the polygon indexes computed.
+  if(!triangulate & plot)
+  */
+  clip_line(e);
 
 #ifdef sje_print_vorinfo
   if(!triangulate & !plot)
@@ -243,6 +244,22 @@ int clip_line(e)
       if(y2<pymin)
 	{	y2 = pymin; x2 = (e -> c - y2)/e -> a;};
     };
-	
+  /* Rather than output line, just store the points.
   line(x1,y1,x2,y2);
+  */
+
+
+  if (poly_idn+4 > poly_idmax ) {
+    printf("%s:%d poly_idmax (%d) reached\n",
+	   __FILE__, __LINE__, poly_idmax);
+    error("oh oh -- can we get back to R?  \n");
+    /* SJE: have a problem -- error() causes R to crash, not good. */
+
+  } else {
+    /* Store the ends of the line bisector. */
+    poly_pts[poly_idn++] = x1;
+    poly_pts[poly_idn++] = y1;
+    poly_pts[poly_idn++] = x2;
+    poly_pts[poly_idn++] = y2;
+  }
 }

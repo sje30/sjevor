@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.6 $
-*** $Date: 2000/06/22 15:32:10 $
+*** $Revision: 1.7 $
+*** $Date: 2000/06/23 16:45:18 $
 ****************************************************************************/
 
 
@@ -47,11 +47,12 @@ void voronoi(int triangulate, struct Site *(*nextsite)());
 void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
 	    Sfloat *info, int *sneighs, Sfloat *ias,
 	    int *del_ids2, Sfloat *del_lens2, Sfloat *del_angs2,
+	    Sfloat *poly_pts2, int *poly_npts,
+	    Sfloat *vx1, Sfloat *vy1, int *vertices,
 	    int *pnpts)
 {
 
-
-  int i, npts;
+  int i, npts, j;
   struct Site *(*next)();
 
   char *opts;
@@ -70,6 +71,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   need_areas     = (rindex(opts, 'a')) ? 1:0;
   sort_neighs    = (rindex(opts, 's')) ? 1:0;
   ignore_rejects = (rindex(opts, 'i')) ? 0:1;
+  plot           = (rindex(opts, 'p')) ? 0:1;
 
   /* printf("need areas: %d sort_neighs %d ignore_rejects %d\n",
      need_areas, sort_neighs, ignore_rejects); */
@@ -79,13 +81,11 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   /* Set up my data structures for remembering things. */
 
 
-  first_index = 1;		/* 0/1 offset problem. */
-
+  first_index = 1;		/* 0/1 offset problem in C vs R/Octave arrays*/
 
   num_fortune_pointers = 0;	/* Set this to zero before we
 				 * call and Fortune routines.
 				 */
-
 
   /* Conservative guesses for the amount of space to allocate for
    * each structure.
@@ -94,14 +94,18 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   /* Number of vertices should equal the number of neighbours. */
   max_numvertices = MAX_NUM_NEIGHS; 	/*  TODO just a guess! */
   max_numvertices_o = max_numvertices;
-  vnum_max = 5 * npts;
-  lnum_max = 5 * npts;		/* conservative guess. */
-  ednum_max = 5 * npts;
+  vnum_max = MAX_DEL_TRIS * npts;
+  lnum_max = MAX_DEL_TRIS * npts;		/* conservative guess. */
+  ednum_max = MAX_DEL_TRIS * npts;
 
   /* e.g. for `t' data set of 100 points, we had 187 vertices, 286
    * lines and 286 edges. */
-  
-  
+
+  /* Define "alloc_vx" if we wish the C program to allocate (& free) the
+   * memory for the vertice positions (vx, vy) and the vertice numbers for
+   * each site (verticeso)
+   */
+#ifdef alloc_vx
   vx = (Sfloat*)calloc(vnum_max, sizeof(Sfloat));
   if (! vx) { 
     printf("could not allocate space for vx %d\n", vnum_max);
@@ -113,9 +117,12 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
     printf("could not allocate space for vy\n");
     exit(-1);
   }
+#else
+  /* R already allocates this memory to store the vertices. */
+  vx = vx1; vy = vy1; verticeso = vertices;
+#endif
+  
   vnum = 0;
-
-
 
   la  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
   lb  = (Sfloat*)calloc(lnum_max, sizeof(Sfloat));
@@ -154,8 +161,10 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   del_lens = del_lens2; del_angs = del_angs2;
 
   del_idn = 0;			/* first free space */
-  del_idmax = 5 * 3 * npts;
-  
+  del_idmax = MAX_DEL_TRIS * 3 * npts;
+
+  poly_idn = 0; poly_idmax = *poly_npts;
+  poly_pts = poly_pts2;
   
   /*************************************************************/
   /* initialise the data. */
@@ -168,7 +177,7 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
   siteidx = 0;			/* defined globally in defs.h */
 
   geominit();
-  /*    if(plot) plotinit(); */
+  if(plot) plotinit();		/* may need to initialise pxmin etc */
 
   voronoi(triangulate, next);
 
@@ -214,20 +223,36 @@ void sjevor(Sfloat *xpts, Sfloat *ypts, Sfloat *dims, char **popts,
     find_vertices(npts);
     find_areas(npts, info);
     find_internal_angles(xpts, ypts, npts, ias);
+
+    /* When returning vertice numbers, increase numbers by 1 to account
+     * for 0/1 array problem.  This needed only if we want to return
+     * the vertices.
+     */
+    for(i=0; i< npts; i++) {
+      for(j=0; j< numvertices[i]; j++)
+	verticeso[VOIND(i,j)] += first_index;
+    }
   }
 
   del_ids2[del_idn] = -1;	/* Add -1 terminator so we know
 				 * how many Delaunay triangles were found.
 				 */
+
+  *poly_npts = poly_idn;
+
   
   /* Clear-up memory. */
+#ifdef alloc_vx
   myfree(vx); myfree(vy);
+  myfree(verticeso);
+#endif
+  
   myfree(la); myfree(lb); myfree(lc); myfree(lb1); myfree(lb2);
   myfree(el); myfree(ev1); myfree(ev2);
   myfree(reject);
 
   myfree(numneighs); myfree(neighs);
-  myfree(numvertices); myfree(verticeso);
+  myfree(numvertices); 
 }
 
 
@@ -552,10 +577,13 @@ void find_vertices(int npts)
   numvertices = (int*)calloc(npts, sizeof(int));
   vertices1 = (int*)calloc(max_numvertices*npts, sizeof(int));
   vertices2 = (int*)calloc(max_numvertices*npts, sizeof(int));
+#ifdef alloc_vx
   verticeso = (int*)calloc(max_numvertices_o*npts, sizeof(int));
+#endif
 
-  if (!vertices1 || !vertices2) {
-    printf("couldn't allocate vertices1/2\n");
+
+  if (!vertices1 || !vertices2 || !verticeso) {
+    printf("couldn't allocate vertices1/2/o\n");
     exit(-1);
   }
 
