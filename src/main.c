@@ -17,6 +17,8 @@
 struct Site *readone();
 struct Site *nextone();
 
+
+#ifdef NEED_MAIN_ROUTINE
 main(argc,argv) 
      char **argv; 
      int argc;
@@ -54,6 +56,8 @@ main(argc,argv)
   voronoi(triangulate, next); 
 
 }
+#endif
+
 
 /* sort sites on y, then x, coord */
 int scomp(s1,s2)
