@@ -250,9 +250,9 @@ int clip_line(e)
 
 
   if (poly_idn+4 > poly_idmax ) {
-    printf("%s:%d poly_idmax (%d) reached\n",
+    Rprintf("%s:%d poly_idmax (%d) reached\n",
 	   __FILE__, __LINE__, poly_idmax);
-    error("oh oh -- can we get back to R?  \n");
+    Rprintf("oh oh -- can we get back to R?  \n");
     /* SJE: have a problem -- error() causes R to crash, not good. */
 
   } else {
