@@ -118,6 +118,12 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'as') {
   res
 }
 
+vorcr2 <- function(pts, w, ...) {
+  ## Version 2 of Voronoi function, much simpler to call.
+  v <- vorcr(pts[,1], pts[,2], w[1], w[2], w[3], w[4], ...)
+  v
+}
+
 vorcrb <- function(x, y, xl, xh, yl, yh, fuzz = 0, f=0.3, opts = 'as') {
   ## Toroidal boundary conditions...
   ## This format was copied from vorb_c.m
