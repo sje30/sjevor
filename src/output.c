@@ -1,6 +1,7 @@
 #
 #include "defs.h"
 #include <stdio.h>
+#include <math.h>
 /* for those who don't have Cherry's plot */
 /* #include <plot.h> */
 openpl(){}
@@ -118,9 +119,45 @@ out_site(s)
 }
 
 
+#define MYSQR(A,B) ((A*A) + (B*B))
 out_triple(s1, s2, s3)
      struct Site *s1, *s2, *s3;
 {
+  Sfloat a, b, c, a2, b2, c2;	/* side lengths and their squares */
+  Sfloat theta_a, theta_b, theta_c;
+
+  int offset = 1;		/* for converting from 0-based to 1-based. */
+  /* Save the triangulation information */
+  if (del_idn+3 > del_idmax ) {
+    printf("%s:%d del_idmax (%d) reached\n",
+	   __FILE__, __LINE__, del_idmax);
+    exit(-1);
+  } else {
+    /* Store the ids of the triangle. */
+    del_ids[del_idn] = s1->sitenbr + offset;
+    del_ids[del_idn+1] = s2->sitenbr + offset;
+    del_ids[del_idn+2] = s3->sitenbr + offset;
+
+    /* Calculate the square of the lengths, and the lengths. */
+    a2 = MYSQR( (s1->coord.x - s2->coord.x), (s1->coord.y - s2->coord.y));
+    b2 = MYSQR( (s2->coord.x - s3->coord.x), (s2->coord.y - s3->coord.y));
+    c2 = MYSQR( (s3->coord.x - s1->coord.x), (s3->coord.y - s1->coord.y));
+    a = sqrt(a2); b = sqrt(b2); c = sqrt(c2);
+
+    /* Calculate the angles of Delaunay triangle using cosine rule. */
+    theta_b = acos( (a2 + c2 - b2) / (2*a*c)) * RAD_TO_DEG;
+    theta_a = acos( (b2 + c2 - a2) / (2*b*c)) * RAD_TO_DEG;
+    theta_c = acos( (a2 + b2 - c2) / (2*a*b)) * RAD_TO_DEG;
+
+    del_lens[del_idn  ] = a; del_angs[del_idn  ] = theta_a;
+    del_lens[del_idn+1] = b; del_angs[del_idn+1] = theta_b;
+    del_lens[del_idn+2] = c; del_angs[del_idn+2] = theta_c;
+
+    
+    del_idn +=3;
+    
+  }
+    
   if(triangulate & !plot &!debug)
     printf("%d %d %d\n", s1->sitenbr, s2->sitenbr, s3->sitenbr);
   if(debug)
