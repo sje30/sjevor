@@ -2,116 +2,123 @@
 ## Wed 07 Jun 2000
 
 
-vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
-    ## Do Voronoi analysis and then return various useful bits of info.
-    
-    dms <- c(xl, xh, yl, yh)
-    npts <- length(x)
-
-    ## maximum number of polygon npts to allow.  for each line, there
-    ## will be four values (x1,y1 x2, y2), so we have five times the
-    ## number of lines to be safe.
-    max.num.neighs <- 18                #conservative maximum.
-    max.del.tris <- 5           
-    iangles.len <- npts*10              #max num of internal angles (10*npts)
-    polynpts <- npts * 4 * 5            #normally npts*20 (4*5)
-    sje.debug <- 0                      #non-zero for debug.
-    z <- .C("sjevor",
-            as.double(x), as.double(y),
-            as.double(dms),
-            as.character(opts),
-            info = double(npts*4),
-            sneighs = integer(npts*max.num.neighs),
-            iangles = double(iangles.len),
-            ## make space for 5n del tris; each triangle needs 3 items.
-            delids  = integer(npts*max.del.tris*3),
-            dellens = double(npts*max.del.tris*3),
-            delangs = double(npts*max.del.tris*3),
-            polypts = double(polynpts), #4 for each line: (x1,y1, x2,y2)
-            vertices.x = double(max.del.tris*npts),
-            vertices.y = double(max.del.tris*npts),
-            vertices = integer(npts*max.num.neighs),
-            as.integer(npts),
-            limits = as.integer(c(iangles.len, max.del.tris,
-              polynpts, max.num.neighs)),
-            as.integer(c(sje.debug)),
-            PACKAGE="sjevor")
-
-    info <- z$info; dim(info) <- c(npts,4)
-    colnames(info) <- c("id", "nn id", "dist", "area")
-
-    sneighs <- z$sneighs;
-    dim(sneighs) <- c(npts,max.num.neighs)
-    ## find the number of neighbours of each site.
-    numneighs <- apply(sneighs,1, function (x) length(x[x>0]))
-
-    ## Now we can cut off any columns that are all -1, just in
-    ## case max.num.neighs was a big overestimate.
-    sneighs <- sneighs[,1:max(numneighs)]
-
-    ## can now shorten the list of internal angles, since their should
-    ## be the same as sum(numneighs).
-    iangles.last <- which(z$iangles == -1) -1
+vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'as') {
+  ## Do Voronoi analysis and then return various useful bits of info.
+  ## Useful options:
+  ## a - calculate area of each polygon
+  ## s - sort neighbours by distance
+  ## i - include cells at border.
+  dms <- c(xl, xh, yl, yh)
+  npts <- length(x)
+  
+  ## maximum number of polygon npts to allow.  for each line, there
+  ## will be four values (x1,y1 x2, y2), so we have five times the
+  ## number of lines to be safe.
+  max.num.neighs <- 18                #conservative maximum.
+  max.del.tris <- 5           
+  iangles.len <- npts*10              #max num of internal angles (10*npts)
+  polynpts <- npts * 4 * 5            #normally npts*20 (4*5)
+  sje.debug <- 0                      #non-zero for debug.
+  z <- .C("sjevor",
+          as.double(x), as.double(y),
+          as.double(dms),
+          as.character(opts),
+          info = double(npts*4),
+          sneighs = integer(npts*max.num.neighs),
+          iangles = double(iangles.len),
+          ## make space for 5n del tris; each triangle needs 3 items.
+          delids  = integer(npts*max.del.tris*3),
+          dellens = double(npts*max.del.tris*3),
+          delangs = double(npts*max.del.tris*3),
+          polypts = double(polynpts), #4 for each line: (x1,y1, x2,y2)
+          vertices.x = double(max.del.tris*npts),
+          vertices.y = double(max.del.tris*npts),
+          vertices = integer(npts*max.num.neighs),
+          as.integer(npts),
+          limits = as.integer(c(iangles.len, max.del.tris,
+            polynpts, max.num.neighs)),
+          as.integer(c(sje.debug)),
+          PACKAGE="sjevor")
+  
+  info <- z$info; dim(info) <- c(npts,4)
+  colnames(info) <- c("id", "nn id", "dist", "area")
+  
+  sneighs <- z$sneighs;
+  dim(sneighs) <- c(npts,max.num.neighs)
+  ## find the number of neighbours of each site.
+  numneighs <- apply(sneighs,1, function (x) length(x[x>0]))
+  
+  ## Now we can cut off any columns that are all -1, just in
+  ## case max.num.neighs was a big overestimate.
+  sneighs <- sneighs[,1:max(numneighs)]
+  
+  ## can now shorten the list of internal angles, since there should
+  ## be the same as sum(numneighs).
+  iangles.last <- which(z$iangles == -1) -1
+  
+  if (length(grep('i', opts)) == 0)
+    ## Can only run this check if we are not including border cells.
     stopifnot(iangles.last == sum(numneighs))
-    iangles <- z$iangles[1:iangles.last]
-    rejects <- (info[,3] < 0)
-    validdists <- info[!rejects,3]
-    meannnd <- mean(validdists)
-    sdnnd   <- sqrt(var(validdists))
-    cr <-  meannnd / sdnnd
 
-    ## Check that the list of nearest neighbours in the info structure
-    ## is identical to the 1st nearest neighbour.
-    stopifnot(identical((all.equal(sneighs[,1], info[,2])),TRUE))
-    
-    ## Process Delaunay triangle information.
-    delidmax <- which(z$delids == -1) -1
+  iangles <- z$iangles[1:iangles.last]
+  rejects <- (info[,3] < 0)
+  validdists <- info[!rejects,3]
+  meannnd <- mean(validdists)
+  sdnnd   <- sqrt(var(validdists))
+  cr <-  meannnd / sdnnd
+  
+  ## Check that the list of nearest neighbours in the info structure
+  ## is identical to the 1st nearest neighbour.
+  stopifnot(identical((all.equal(sneighs[,1], info[,2])),TRUE))
+  
+  ## Process Delaunay triangle information.
+  delidmax <- which(z$delids == -1) -1
+  
+  ## Truncate Delaunay info to right length.
+  delids  <- z$delids[1:delidmax]
+  dim(delids) <- c(3, delidmax/3); delids <- t(delids);
+  
+  dellens <- z$dellens[1:delidmax]
+  dim(dellens) <- c(3, delidmax/3); dellens <- t(dellens);
 
-    ## Truncate Delaunay info to right length.
-    delids  <- z$delids[1:delidmax]
-    dim(delids) <- c(3, delidmax/3); delids <- t(delids);
-
-    dellens <- z$dellens[1:delidmax]
-    dim(dellens) <- c(3, delidmax/3); dellens <- t(dellens);
-
-    delangs <- z$delangs[1:delidmax]
-    dim(delangs) <- c(3, delidmax/3); delangs <- t(delangs);
-
-    polypts <- z$polypts[1:z$limits[3]]
-    vertices.xy <- cbind(z$vertices.x, z$vertices.y)
-
-
-    ## Normally ignore.rejects is true so that we reject triangles
-    ## that involve reject sites.
-    ignore.rejects <- TRUE;
-    if (ignore.rejects) {
-      anyrej <- rejects[delids]; dim(anyrej) <- c(length(anyrej)/3,3);
-      ## rejtri[i] is true if the ith triangle should be rejected.
-      rejtri <- apply(anyrej, 1, any)
-    } else {
-      ## accept all delauanay triangles.
-      ## check that delidmax below is the right thing to do...
-      rejtri <- logical(length = (delidmax/3))# all elements FALSE.
-    }
-
-    delacc <- which(!rejtri)            #ids of accepted triangles.
-    delrej <- which(rejtri)             #ids of rejected triangles.
-    
-    res <- list(info = info,
-                pts = cbind(x, y),
-                neighs = sneighs, cr = cr, meannnd = meannnd,
-                sdnnd = sdnnd, rejects = rejects, iangles = iangles,
-                delids = delids, dellens = dellens, delangs = delangs,
-                delacc = delacc, delrej = delrej, polypts = polypts,
-                numneighs = numneighs,
-                vertices.xy = vertices.xy,
-                vertices= matrix(z$vertices, nrow=npts, byrow=TRUE))
-
-    class(res) <- "sjevor"
-    res
+  delangs <- z$delangs[1:delidmax]
+  dim(delangs) <- c(3, delidmax/3); delangs <- t(delangs);
+  
+  polypts <- z$polypts[1:z$limits[3]]
+  vertices.xy <- cbind(z$vertices.x, z$vertices.y)
+  
+  
+  ## Normally ignore.rejects is true so that we reject triangles
+  ## that involve reject sites.
+  ignore.rejects <- TRUE;
+  if (ignore.rejects) {
+    anyrej <- rejects[delids]; dim(anyrej) <- c(length(anyrej)/3,3);
+    ## rejtri[i] is true if the ith triangle should be rejected.
+    rejtri <- apply(anyrej, 1, any)
+  } else {
+    ## accept all delauanay triangles.
+    ## check that delidmax below is the right thing to do...
+    rejtri <- logical(length = (delidmax/3))# all elements FALSE.
+  }
+  
+  delacc <- which(!rejtri)            #ids of accepted triangles.
+  delrej <- which(rejtri)             #ids of rejected triangles.
+  
+  res <- list(info = info,
+              pts = cbind(x, y),
+              neighs = sneighs, cr = cr, meannnd = meannnd,
+              sdnnd = sdnnd, rejects = rejects, iangles = iangles,
+              delids = delids, dellens = dellens, delangs = delangs,
+              delacc = delacc, delrej = delrej, polypts = polypts,
+              numneighs = numneighs,
+              vertices.xy = vertices.xy,
+              vertices= matrix(z$vertices, nrow=npts, byrow=TRUE))
+  
+  class(res) <- "sjevor"
+  res
 }
 
-vorcrb <- function(x, y, xl, xh, yl, yh, fuzz = 0, f=0.3, opts = 'nags') {
+vorcrb <- function(x, y, xl, xh, yl, yh, fuzz = 0, f=0.3, opts = 'as') {
   ## Toroidal boundary conditions...
   ## This format was copied from vorb_c.m
   ## TODO: del.plot doesn't work..., but on the other hand, the vorcr.polygons
