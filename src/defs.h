@@ -91,6 +91,8 @@ int PQempty();
 /******************************************************************/
 /* sje defines. */
 
+#define RAD_TO_DEG  57.29577951308232
+
 Sfloat	*vx, *vy; int     vnum, vnum_max;
 
 int lnum, lnum_max;
@@ -99,6 +101,10 @@ int   *lb1, *lb2;
 
 int ednum, ednum_max;
 int *el, *ev1, *ev2;
+
+int del_idn, del_idmax;
+int *del_ids;			/* pointer where Delaunay info can be stored.*/
+Sfloat *del_lens, *del_angs;
 
 int     *reject;		/* reject[s] is 1 iff site S is a reject. */
 
