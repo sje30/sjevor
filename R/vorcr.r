@@ -181,22 +181,16 @@ del.plot <- function(v) {
 
 
 plot.sjevor <- function(v, show.pts=T, show.areas=F, show.rejects=F, ...) {
-  ## line-based approach to doing the plot.  We take the vector
-  ## v$polypts and extract separately the x (odd-numbered) and y
-  ## (even-numbered) values.  After every second x (or y) value we
-  ## then insert a NA value to cause `lines' to break after every line segment.
 
-  ## e.g. given polypts = ( 1 2 3 4 5 6 7 8 ...)
-  ## xs = (1 3 5 7 ...), ys = (2 4 6 8 ...)
-  ## xs.2 = (1 3 NA 5 7 NA ...), ys.2 = (2 4 NA 6 8 NA ...)
-  ## so that a line segment is drawn from (1,2) to (3,4)
-  ## then another segment from (5,6) to (7,8) and so on...
+  ## line-based approach to doing the plot.  We take the vector
+  ## v$polypts; each set of 4 consecutive values is (x0, y0, x1, y1)
+  ## -- for a line to be drawn from (x0,y0) to (x1,y1).
   
   np <- length(v$polypts)
-  xs <- v$polypts[seq(from=1, to=np, by=2)]
-  ys <- v$polypts[seq(from=2, to=np, by=2)]
-  xs.2 <- as.vector(rbind(matrix(xs, nrow=2, byrow=F), rep(NA,np/4)))
-  ys.2 <- as.vector(rbind(matrix(ys, nrow=2, byrow=F), rep(NA,np/4)))
+  x0 <- v$polypts[seq(from=1, to=np, by=4)]
+  y0 <- v$polypts[seq(from=2, to=np, by=4)]
+  x1 <- v$polypts[seq(from=3, to=np, by=4)]
+  y1 <- v$polypts[seq(from=4, to=np, by=4)]
 
   if (show.areas) {
     plot(v$pts[,1], v$pts[,2], type="n", asp=1, xlab="", ylab="")
@@ -215,7 +209,7 @@ plot.sjevor <- function(v, show.pts=T, show.areas=F, show.rejects=F, ...) {
       plot(v$pts[,1], v$pts[,2], type="n",asp=1, xlab="", ylab="")
     }
   }
-  lines(xs.2, ys.2)
+  segments(x0, y0, x1, y1)
 }
 
 vorcr.polygons <- function(v) {
