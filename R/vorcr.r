@@ -88,13 +88,18 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     delacc <- which(!rejtri)            #ids of accepted triangles.
     delrej <- which(rejtri)             #ids of rejected triangles.
     
-    list(info = info, neighs = sneighs, cr = cr, meannnd = meannnd,
-         sdnnd = sdnnd, rejects = rejects, iangles = iangles,
-         delids = delids, dellens = dellens, delangs = delangs,
-         delacc = delacc, delrej = delrej, polypts = polypts,
-         numneighs = numneighs,
-         vertices.xy = vertices.xy,
-         vertices= matrix(z$vertices, nrow=npts, byrow=T))
+    res <- list(info = info,
+                pts = cbind(x, y),
+                neighs = sneighs, cr = cr, meannnd = meannnd,
+                sdnnd = sdnnd, rejects = rejects, iangles = iangles,
+                delids = delids, dellens = dellens, delangs = delangs,
+                delacc = delacc, delrej = delrej, polypts = polypts,
+                numneighs = numneighs,
+                vertices.xy = vertices.xy,
+                vertices= matrix(z$vertices, nrow=npts, byrow=T))
+
+    class(res) <- "sjevor"
+    res
 }
 
 vorcr.dellens <- function(vor, idxs=NULL) {
@@ -144,11 +149,12 @@ ianglesplot <- function(angles, show=TRUE)  {
   list(x=ah$mids, y=cdf)
 }
 
-del.plot <- function(pts, v) {
+del.plot <- function(v) {
   ## Plot the Delaunay triangulation.
   ## pts is the 2d set of data points; v is the voronoi information from
   ## that data set.
-  
+
+  pts <- v$pts
   ## First draw the sites.
   par(col ="black")
   par(mfrow=c(1,1), pty="s")
@@ -174,7 +180,7 @@ del.plot <- function(pts, v) {
 }
 
 
-vor.plot <- function(pts, v, show.pts=T, show.areas=F, show.rejects=F) {
+plot.sjevor <- function(v, show.pts=T, show.areas=F, show.rejects=F, ...) {
   ## line-based approach to doing the plot.  We take the vector
   ## v$polypts and extract separately the x (odd-numbered) and y
   ## (even-numbered) values.  After every second x (or y) value we
@@ -193,24 +199,26 @@ vor.plot <- function(pts, v, show.pts=T, show.areas=F, show.rejects=F) {
   ys.2 <- as.vector(rbind(matrix(ys, nrow=2, byrow=F), rep(NA,np/4)))
 
   if (show.areas) {
-    plot(pts[,1], pts[,2], type="n", asp=1, xlab="", ylab="")
-    text(pts[,1], pts[,2], signif(v$info[,4],3))
+    plot(v$pts[,1], v$pts[,2], type="n", asp=1, xlab="", ylab="")
+    text(v$pts[,1], v$pts[,2], signif(v$info[,4],3))
   } else {
     if (show.pts) {
-      plot(pts[,1], pts[,2], pch=1, asp=1, xlab="", ylab="")
       if (show.rejects) {
+        plot(v$pts[,1], pch=1, v$pts[,2], asp=1, xlab="", ylab="")
         rejects <- which(v$info[,4] < 0)
-        points(pts[rejects,1], pts[rejects,2], pch=19, asp=1)
+        points(v$pts[rejects,1], v$pts[rejects,2], pch=19, asp=1)
+      } else {
+        plot(v$pts[,1], v$pts[,2], asp=1, xlab="", ylab="", ...)
       }
     } else {
       ## don't want to see points
-      plot(pts[,1], pts[,2], type="n",asp=1, xlab="", ylab="")
+      plot(v$pts[,1], v$pts[,2], type="n",asp=1, xlab="", ylab="")
     }
   }
   lines(xs.2, ys.2)
 }
 
-vorcr.polygons <- function(pts, v) {
+vorcr.polygons <- function(v) {
   ## For each site, find its surrounding polygon and plot it.  This is
   ## a slower method than vor.plot(), but it shows how to use the vertice
   ## information associated with each site.
@@ -219,6 +227,7 @@ vorcr.polygons <- function(pts, v) {
   if (!any(v$vertices > 0)) {
     stop("no vertice information for each site was stored. Use option a")
   }
+  pts <- v$pts
   npts <- dim(pts)[1]
   plot(pts)
   for (i in 1:npts) {
