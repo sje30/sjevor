@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.2 $
-*** $Date: 2000/04/17 19:32:26 $
+*** $Revision: 1.3 $
+*** $Date: 2000/04/26 18:50:10 $
 ****************************************************************************/
 
 
@@ -183,6 +183,16 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
   }
 
 
+  /* Initialise the info array. */
+  for (i=0; i<npts;i++) {
+    info[RIND(i,0,npts)] =  (float)(i + first_index); /* index num */
+    info[RIND(i,1,npts)] = -1.00;	/* id of nearest neigh */
+    info[RIND(i,2,npts)] = -1.00;	/* distance to nearest neigh */
+    info[RIND(i,3,npts)] = -1.00;	/* area of polygon of this unit */
+  }
+
+
+    
   /* find the rejects. */
   find_rejects(npts);
 
@@ -393,6 +403,7 @@ void find_nnd(float *xpts, float *ypts, int npts,
   float px, py,  dx, dy, dist2,  x, y;
   int n, i;
   int   num_sneighs;
+  int	first_check;
 
 
   if (0 && !(nndfp = fopen( file, "w"))) {
@@ -416,24 +427,19 @@ void find_nnd(float *xpts, float *ypts, int npts,
     sneighs[i] = -1;
   }
 
-  
+  mindist = 99; minidx = 888;	/* prevent compiler thinking these might
+				 * be uninitialised. */
   for (p=0; p<npts; p++) {
 
     /* printf("finding nearest to point %d\n", p); */
     if (reject[p] && ignore_rejects) { 
       if (nndfp) fputs("-1 -1\n", nndfp);
-      	
-      info[RIND(p,0,npts)] =  p + first_index;
-      info[RIND(p,1,npts)] = -1;
-      info[RIND(p,2,npts)] = -1;
-      info[RIND(p,3,npts)] = -1;
-
       if (snfp) fputs("\n", snfp);
       
       continue;		/* jump to next p in the for loop. */
     }
 
-    mindist = 99999999; minidx = -1;
+    first_check = 1;
     px = xpts[p];	py = ypts[p];
 
 
@@ -446,9 +452,10 @@ void find_nnd(float *xpts, float *ypts, int npts,
       dx = (x - px); dy = (y - py);
       dist2 = (dx*dx) + (dy*dy);
 	    
-      if (dist2 < mindist) {
+      if (first_check ||(dist2 < mindist)) {
 	mindist = dist2;
 	minidx = i;
+	first_check = 0;
       }
 
       if (sort_neighs) {
@@ -466,12 +473,9 @@ void find_nnd(float *xpts, float *ypts, int npts,
     v = minidx + first_index;
     if (nndfp) fprintf(nndfp, "%.4f %d\n", dist, v);
 
-	
-    info[RIND(p,0,npts)] = p + first_index;
-    info[RIND(p,1,npts)] = v;
-    info[RIND(p,2,npts)] = dist;
-    info[RIND(p,3,npts)] = -1;
-	
+    info[RIND(p,1,npts)] = v;	/* i.d. of nearest neigh */
+    info[RIND(p,2,npts)] = dist; /* distance to nearest neigh */
+
 
     if (sort_neighs) {
       /* Sort the neighbours according to distance from data point. */
@@ -714,7 +718,6 @@ void find_areas(int npts, float *info)
   
   for (p=0; p < npts; p++) {
     if (reject[p]) {
-      info[RIND(p,3,npts)] = -1;
       continue;
     }
     sum = 0.0;
@@ -750,7 +753,7 @@ void find_areas(int npts, float *info)
 			  * on ordering of coordinates. */
 
     /*v = p+first_index;*/
-    info[RIND(p,3,npts)] = sum;
+    info[RIND(p,3,npts)] = sum;	/* area of polygon */
   }
   
 }
