@@ -126,14 +126,11 @@ trigrid <- function (nx, ny, d)
 
 
 p <- trigrid(10,10,20)
-
-## Add some noise, try values between 1.0 and 30.0
-p <- p + (6.0 * runif(nrow(p)))
+p <- p + (6.0 * runif(nrow(p)))         #Add noise, between 1.0 and 30.0
 plot(p)
 
 v <- vorcr(p[,1], p[,2], 0,250,  0,200, opts='snag')
 v$cr
-
 r <- ianglesplot(v$iangles)
 
 
@@ -141,9 +138,9 @@ r <- ianglesplot(v$iangles)
 ## Compare the Fortuen code with tripack().
 
 library(tripack)
+wid<- 500; ht <- 300; npts <- 200
 
-wid<- 300; ht <- 500; npts <- 200
-
+par(mfrow=c(4,3))
 for (i in 1:10) {
   xs <- runif(npts)*wid; ys <- runif(npts)*ht
   v <- vorcr(xs, ys, 0, wid, 0, ht)
@@ -151,6 +148,8 @@ for (i in 1:10) {
   v.areas <- v$info[,4]
   rejects <- which(v$info[,2]==-1)
 
+  ##plot(tripack.vm)
+  vor.plot(cbind(xs, ys), v, show.rejects=T)
   tripack.vm <- voronoi.mosaic(xs, ys)
   tripack.vm.areas <- voronoi.area(tripack.vm)
   ##rejects <- voronoi.findrejectsites(tripack.vm, 0, wid, 0, ht)
@@ -162,11 +161,15 @@ for (i in 1:10) {
 }
 
 
-plot(tripack.vm.areas, v.areas)
 
-## show the rejects in black.
-plot(xs, ys)
-vor.plot( cbind(xs, ys), v)
-points(xs[v.rejects], ys[v.rejects], pch=19)
-text(xs, ys, signif(v.areas,2))
+## Compare the area of Fortune data set between my code and Matlab.
+## matlab areas computed by matlab_vorarea_fortune.m.
 
+data(fortune.eg)
+v <- vorcr(fortune.eg[,1], fortune.eg[,2], 0,1, 0,1)
+v$cr
+v.areas <- v$info[,4]
+accepts <- (v$info[,2]>0)
+m.areas <- scan(file = "~/langs/R/sjevor/extras/matlab_fortune_areas.dat")
+diffs <- v.areas[accepts] - m.areas[accepts]
+stopifnot( (diffs < 1e-9))              #all diffs must be less than 1e-9
