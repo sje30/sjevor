@@ -127,7 +127,10 @@ void sje_readsites(Sfloat *xpts, Sfloat *ypts, int npts)
     sites[nsites].refcnt = 0;
     nsites += 1;
     if (nsites % 4000 == 0) 
-      sites = (struct Site *) realloc(sites,(nsites+4000)*sizeof*sites);
+      sites = (struct Site *) S_realloc(sites,(nsites+4000), nsites,
+					sizeof*sites);
+					
+					
   };
 
   
