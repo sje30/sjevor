@@ -2,19 +2,24 @@
 extern "C" {
 #endif
 
-#ifdef silence_unused_code /* silence emacs for indenting purposes. */
-}
-#endif
+
 
 #include <stdio.h>
 #include <math.h>
 
 
-void sjevor(float *xpts, float *ypts, 
-	    float *temp, int *sneighs,
+
+/* This is the expected maximum number of neighbours. */
+/* 18 should be a conservative number, 13 normally works okay. */
+#define MAX_NUM_NEIGHS 18
+
+/* Definitions for the routines that will be called from Octave. */
+
+void sjevor(float *xpts, float *ypts, float *dims, char *opts,
+	    float *info, int *sneighs,
 	    int npts);
-//%input xpts(npts), ypts(npts)
-//%output temp(npts,4), sneighs(npts, 13)
+//%input xpts(npts), ypts(npts), dims(4)
+//%output info(npts,4), sneighs(npts, MAX_NUM_NEIGHS)
 
 void sjevoradd(float *xpts, float *ypts, float *temp, int npts);
 //%input xpts(npts), ypts(npts)
@@ -23,6 +28,9 @@ void sjevoradd(float *xpts, float *ypts, float *temp, int npts);
 
 
 
+
+
+/* General function definitions. */
 void find_rejects(int npts);
 int out_of_bounds(int v);
 
@@ -32,23 +40,28 @@ void add_neigh(int i, int j);
 void write_neighs(int npts);
 void find_nnd(float *xpts, float *ypts, int npts,
 	      float *temp, int *sneighs);
+void find_vertices(int npts);
+void find_areas(int npts, float *temp);
+void myfree(void *ptr);
+void sje_readsites(float *xpts, float *ypts, int npts);
 
+
+/* To sort the neighbours by distance, we use qsort().  This uses
+ * the following simple structure. */
 typedef struct keydist {
-  int   key;
-  float dist;
+  int   key;			/* number of neighbour cell  */
+  float dist;			/* distance from reference cell. */
 } Keydist;
-
-
-/*need to specify this as a hard limit somehow MAX_NUM_NEIGHS];*/
-Keydist dists[20]; 
-
 
 int keydist_cmp (Keydist *c1, Keydist *c2);
 
+/*need to specify this as a hard limit somehow MAX_NUM_NEIGHS];*/
+#define MAX_DISTS MAX_NUM_NEIGHS
+Keydist dists[MAX_DISTS]; 
+
+int sje_debug;			/* non-zero if we want debug output. */
 
 
-void find_vertices(int npts);
-void find_areas(int npts, float *temp);
 #ifdef __cplusplus
 }
 #endif
