@@ -8,8 +8,8 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.3 $
-*** $Date: 2000/04/26 18:50:10 $
+*** $Revision: 1.4 $
+*** $Date: 2000/04/26 20:08:18 $
 ****************************************************************************/
 
 
@@ -136,11 +136,6 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
   }
   
   
-  numpoints = (int*)calloc(npts, sizeof(int));
-  if (! numpoints) { 
-    printf("could not allocate space for numpoints\n");
-    exit(-1);
-  }
 
   reject = (int*)calloc(npts, sizeof(int));
   if (! reject) { 
@@ -213,7 +208,6 @@ void sjevor(float *xpts, float *ypts, float *dims, char *opts,
   myfree(vx); myfree(vy);
   myfree(la); myfree(lb); myfree(lc); myfree(lb1); myfree(lb2);
   myfree(el); myfree(ev1); myfree(ev2);
-  myfree(numpoints);
   myfree(reject);
 
   myfree(numneighs); myfree(neighs);
@@ -235,7 +229,6 @@ void find_rejects(int npts)
   int line, v1, v2, p1, p2;
   for(i=0; i < npts; i++) {
     reject[i] = 0;
-    numpoints[i] = 0;
   }
 
   if (sje_debug) {
