@@ -8,27 +8,28 @@
 ***
 *** Created 17 Apr 2000
 ***
-*** $Revision: 1.1 $
-*** $Date: 2000/04/17 12:09:20 $
+*** $Revision: 1.2 $
+*** $Date: 2000/04/17 19:32:26 $
 ****************************************************************************/
 
 
 
 /*********************** + Purpose of File + ************************/
-/* take a set of x,y coordinates and then call Voronoi code. */
+/* Take a set of x,y coordinates and then call Voronoi code. */
 /*********************** * Purpose of File * ************************/
 
 
 /* -  Include Files - */
 
+#include <strings.h>
 #include "defs.h"
 #include "sjevor.h"
 /* - Defines - */
 
 /* - Function Declarations - */
 
+/* These are the Fortune functions that I use. */
 void freeinit(struct Freelist *fl, int size);
-void sje_readsites(float *xpts, float *ypts, int npts);
 struct Site *nextone();
 void geominit();
 void voronoi(int triangulate, struct Site *(*nextsite)());
@@ -43,25 +44,59 @@ void voronoi(int triangulate, struct Site *(*nextsite)());
 /* - Start of Code  - */
 
 
-void sjevor(float *xpts, float *ypts,
-	    float *temp, int *sneighs,
+void sjevor(float *xpts, float *ypts, float *dims, char *opts,
+	    float *info, int *sneighs,
 	    int npts)
 {
 
 
+  int i;
   struct Site *(*next)();
-  printf("%f %f\n", xpts[2], ypts[2]);
 
-  /* Now that we have the data, we need to send it to the Voronoi code.
+
+  /* Set all pointers initially to be NULL; seems like sometimes they
+   * could be initialised to rogue values.  Other pointers are okay,
+   * since they will always get allocated.
    */
+  
+  numvertices = NULL; verticeso = NULL;
+  
+  /* Parse options so that we set appropriate flags. */
+  need_areas     = (rindex(opts, 'a')) ? 1:0;
+  sort_neighs    = (rindex(opts, 's')) ? 1:0;
+  ignore_rejects = (rindex(opts, 'i')) ? 0:1;
 
+  /*
+  printf("need areas: %d sort_neighs %d ignore_rejects %d\n",
+	 need_areas, sort_neighs, ignore_rejects);
+  */
+
+  
   /* Set up my data structures for remembering things. */
 
 
   first_index = 1;		/* 0/1 offset problem. */
-  ignore_rejects = 1;
 
-  vnum_max = 4 * npts;		/* conservative guess. */
+
+  num_fortune_pointers = 0;	/* Set this to zero before we
+				 * call and Fortune routines.
+				 */
+
+
+  /* Conservative guesses for the amount of space to allocate for
+   * each structure.
+   */
+
+  /* Number of vertices should equal the number of neighbours. */
+  max_numvertices = MAX_NUM_NEIGHS; 	/*  TODO just a guess! */
+  max_numvertices_o = max_numvertices;
+  vnum_max = 5 * npts;
+  lnum_max = 5 * npts;		/* conservative guess. */
+  ednum_max = 5 * npts;
+
+  /* e.g. for `t' data set of 100 points, we had 187 vertices, 286
+   * lines and 286 edges. */
+  
   
   vx = (float*)calloc(vnum_max, sizeof(float));
   if (! vx) { 
@@ -76,7 +111,7 @@ void sjevor(float *xpts, float *ypts,
   }
   vnum = 0;
 
-  lnum_max = 5 * npts;		/* conservative guess. */
+
 
   la  = (float*)calloc(lnum_max, sizeof(float));
   lb  = (float*)calloc(lnum_max, sizeof(float));
@@ -90,11 +125,11 @@ void sjevor(float *xpts, float *ypts,
     exit(-1);
   }
 
-  ednum_max = 5 * npts;
   el  = (int*)calloc(ednum_max, sizeof(int));
   ev1  = (int*)calloc(ednum_max, sizeof(int));
   ev2  = (int*)calloc(ednum_max, sizeof(int));
-
+  ednum = 0;
+  
   if ((!el) || (!ev1) || (!ev2) ) {
     printf("could not allocate space for line data structures\n");
     exit(-1);
@@ -113,7 +148,8 @@ void sjevor(float *xpts, float *ypts,
     exit(-1);
   }
 
-  
+  sje_minx = dims[0]; sje_maxx = dims[1];
+  sje_miny = dims[2]; sje_maxy = dims[3];
   
   /*************************************************************/
   /* initialise the data. */
@@ -126,70 +162,76 @@ void sjevor(float *xpts, float *ypts,
   siteidx = 0;			/* defined globally in defs.h */
 
   geominit();
-/*    if(plot) plotinit(); */
+  /*    if(plot) plotinit(); */
 
   voronoi(triangulate, next);
-  /*************************************************************/
 
-  printf("read %d vertices\n", vnum);
-  printf("read %d lines\n", lnum);
-  printf("read %d edges\n", ednum);
+  /*************************************************************/
+  if (sje_debug) {
+    printf("read %d vertices %d lines %d edges\n", vnum, lnum, ednum);
+  }
+
 
   /* Post-process the memory structures. */
 
+  /* Now that we have finished with Fortune code, remove the pointers.
+   * See memory.c for details. */
+
+  /*printf("%d fortune pointers allocated\n", num_fortune_pointers);*/
+  for(i=0; i< num_fortune_pointers; i++) {
+    free(fortune_pointers[i]);
+  }
 
 
   /* find the rejects. */
   find_rejects(npts);
 
 
-  init_neighs(npts); find_neighs(); write_neighs(npts);
+  init_neighs(npts); find_neighs();
+  /*write_neighs(npts);*/
 
-  find_nnd(xpts, ypts, npts, temp, sneighs);
+  find_nnd(xpts, ypts, npts, info, sneighs);
 
 
   /* Find the areas of the polygons. */
-  find_vertices(npts);
-  find_areas(npts, temp);
+  if (need_areas) {
+    find_vertices(npts);
+    find_areas(npts, info);
+  }
   
   /* Clear-up memory. */
-  free(vx); free(vy);
-  free(la); free(lb); free(lc); free(lb1); free(lb2);
-  free(el); free(ev1); free(ev2);
-  free(numpoints);
-  free(reject);
+  myfree(vx); myfree(vy);
+  myfree(la); myfree(lb); myfree(lc); myfree(lb1); myfree(lb2);
+  myfree(el); myfree(ev1); myfree(ev2);
+  myfree(numpoints);
+  myfree(reject);
+
+  myfree(numneighs); myfree(neighs);
+  myfree(numvertices); myfree(verticeso);
 }
 
 
-
-void sjevoradd(float *xpts, float *ypts, float *temp, int npts)
+void myfree(void *ptr)
 {
-  /* test function to see that matwrap is working okay. */
-  int i;
-  /* printf("%f %f\n", xpts[2], ypts[2]);*/
-  for (i=0; i< npts; i++)
-    temp[i] = xpts[i] + ypts[i];
-
+  /* free the memory, but check first that the ptr is not NULL. */
+  if (ptr) free(ptr);
 }
+
 
 
 void find_rejects(int npts)
 {
   int i, edge;
   int line, v1, v2, p1, p2;
-  int num_rejects = 0;
-  
   for(i=0; i < npts; i++) {
     reject[i] = 0;
     numpoints[i] = 0;
   }
 
-  /* better for me to set the min, max otherwise can get small problems in
-     what is defined as a reject. */
-  
-  xmin = 0.0; xmax = 1.0; ymin = 0.0; ymax = 1.0;
-  printf("find_rejects: boundary %f %f %f %f\n", xmin, xmax, ymin, ymax);
-
+  if (sje_debug) {
+    printf("find_rejects: boundary %f %f %f %f\n", sje_minx, sje_maxx,
+	   sje_miny, sje_maxy);
+  }
 
   for (edge=0; edge < ednum; edge++) {
     line = el[edge];
@@ -209,14 +251,19 @@ void find_rejects(int npts)
       
   }
 
+#ifdef print_rejects
   /* print out how many rejects found. */
+  /*int num_rejects = 0;*/
+    
   for (i=0; i< npts; i++) {
     if (reject[i] ) {
       printf("%d ", (i + first_index));
       num_rejects++;
     }
   }
-    printf("; total rejects: %d\n", num_rejects);
+  printf("; total rejects: %d\n", num_rejects);
+#endif
+  
 }
 
 
@@ -228,7 +275,8 @@ int out_of_bounds(int v)
   x = vx[v]; y = vy[v];
 
 
-  if ( ( x < xmin) || (x > xmax) || (y < ymin) || (y > ymax)) {
+  if ( ( x < sje_minx) || (x > sje_maxx) ||
+       (y <  sje_miny) || (y > sje_maxy)) {
     return 1;
   } else {
     return 0;
@@ -239,7 +287,6 @@ void init_neighs(int npts)
 {
   /* initialise the neighbours data structures. */
   int i;
-
   numneighs = (int*)calloc(npts, sizeof(int));
   neighs = (int*)calloc(npts*MAX_NUM_NEIGHS, sizeof(int));
   for (i=0; i< npts; i++) {
@@ -255,12 +302,12 @@ void find_neighs()
 
   int l, pta, ptb;
 
-    for (l=0; l < lnum; l++) {
-	pta = lb1[l]; ptb = lb2[l];
+  for (l=0; l < lnum; l++) {
+    pta = lb1[l]; ptb = lb2[l];
 	
-	add_neigh(pta, ptb);
-	add_neigh(ptb, pta);
-    }
+    add_neigh(pta, ptb);
+    add_neigh(ptb, pta);
+  }
 }
 
 
@@ -288,6 +335,12 @@ void add_neigh(int i, int j)
   if (looking == 1) {
     neighs[NIND(i,num)] = j;
     numneighs[i]++;
+    if (numneighs[i] >= MAX_NUM_NEIGHS) {
+      printf("%s:%d maximum number of neighbours (%d) exceeded\n",
+	     __FILE__, __LINE__, numneighs[i]);
+      exit(-1);
+    }
+      
   }
 }
 
@@ -326,63 +379,54 @@ void write_neighs(int npts)
 
 
 void find_nnd(float *xpts, float *ypts, int npts,
-	      float *temp, int *sneighs)
+	      float *info, int *sneighs)
 {
   /* Find the NND for each datapoint.
    * We can also optionally sort the neighbours according to distance.
    */
 
-  FILE	*nndfp, *snfp;
+  FILE	*nndfp = NULL, *snfp = NULL;
   char  *file = "nnds";
   int   p;
   float mindist, dist;
   int   minidx, v;
   float px, py,  dx, dy, dist2,  x, y;
   int n, i;
-  int   sort_neighs = 1;
   int   num_sneighs;
-  nndfp = fopen( file, "w");
-  if (!nndfp ) {
+
+
+  if (0 && !(nndfp = fopen( file, "w"))) {
     printf("%s: %s could not be opened for writing",
 	   "find_nnd", file);
     exit(-1);
   }
-  /*
-  if (sort_neighs) {
-    dists = (float*)calloc(MAX_, sizeof(float));
-    if (! dists) { 
-      printf("%s: could not allocate space for dists\n", find_nnd);
-      exit(-1);
-    }
-  }
-  */
 
   if (sort_neighs) {
-    snfp = fopen("sneighs", "w");
-    if (!snfp) {
+    if (0 && !(snfp = fopen("sneighs", "w"))) {
       printf("Could not open sneighs for writing\n");
       exit(-1);
     }
-
-    /* initialise the sneighs array to store -1. */
-    /* TODO: This loop can be optimised! */
-    num_sneighs = npts*MAX_NUM_NEIGHS;
-    for(i=0; i< num_sneighs; i++) {
-      sneighs[i] = -1;
-    }
-
   }
+
+  /* initialise the sneighs array to store -1. */
+  /* TODO: This loop can be optimised! */
+  /* If we are not sorting the neighbours, need to return -1 anyway. */
+  num_sneighs = npts*MAX_NUM_NEIGHS;
+  for(i=0; i< num_sneighs; i++) {
+    sneighs[i] = -1;
+  }
+
   
   for (p=0; p<npts; p++) {
 
     /* printf("finding nearest to point %d\n", p); */
     if (reject[p] && ignore_rejects) { 
-      fputs("-1 -1\n", nndfp);
+      if (nndfp) fputs("-1 -1\n", nndfp);
       	
-      temp[RIND(p,0,npts)] =  p;
-      temp[RIND(p,1,npts)] = -1;
-      temp[RIND(p,2,npts)] = -1;
-      temp[RIND(p,3,npts)] = -1;
+      info[RIND(p,0,npts)] =  p + first_index;
+      info[RIND(p,1,npts)] = -1;
+      info[RIND(p,2,npts)] = -1;
+      info[RIND(p,3,npts)] = -1;
 
       if (snfp) fputs("\n", snfp);
       
@@ -393,66 +437,70 @@ void find_nnd(float *xpts, float *ypts, int npts,
     px = xpts[p];	py = ypts[p];
 
 
-	/* For each cell, look amongst its neighbours
-	 * to find its closest neighbour. */
+    /* For each cell, look amongst its neighbours
+     * to find its closest neighbour. */
 	
-	for(n=0; n < numneighs[p]; n++) {
-	    i = neighs[NIND(p,n)];
-	    x = xpts[i]; y = ypts[i];
-	    dx = (x - px); dy = (y - py);
-	    dist2 = (dx*dx) + (dy*dy);
+    for(n=0; n < numneighs[p]; n++) {
+      i = neighs[NIND(p,n)];
+      x = xpts[i]; y = ypts[i];
+      dx = (x - px); dy = (y - py);
+      dist2 = (dx*dx) + (dy*dy);
 	    
-	    if (dist2 < mindist) {
-		mindist = dist2;
-		minidx = i;
-	    }
+      if (dist2 < mindist) {
+	mindist = dist2;
+	minidx = i;
+      }
 
-  	    if (sort_neighs) {
-	      dists[n].key = i + first_index;
-	      dists[n].dist = dist2;
-	    }
+      if (sort_neighs) {
+	if (n >= MAX_DISTS) {
+	  printf("%s:%d: too many distances %d\n",
+		 __FILE__, __LINE__, n);
+	  exit(-1);
 	}
+	dists[n].key = i + first_index;
+	dists[n].dist = dist2;
+      }
+    }
 
-	dist = (float)sqrt((double)mindist);
-	v = minidx + first_index;
-	fprintf(nndfp, "%.4f %d\n", dist, v);
+    dist = (float)sqrt((double)mindist);
+    v = minidx + first_index;
+    if (nndfp) fprintf(nndfp, "%.4f %d\n", dist, v);
 
 	
-	temp[RIND(p,0,npts)] = p;
-	temp[RIND(p,1,npts)] = v;
-	temp[RIND(p,2,npts)] = dist;
-	temp[RIND(p,3,npts)] = -1;
+    info[RIND(p,0,npts)] = p + first_index;
+    info[RIND(p,1,npts)] = v;
+    info[RIND(p,2,npts)] = dist;
+    info[RIND(p,3,npts)] = -1;
 	
 
-	if (sort_neighs) {
-	  /* Sort the neighbours according to distance from data point. */
+    if (sort_neighs) {
+      /* Sort the neighbours according to distance from data point. */
 
-	  qsort (dists, numneighs[p], sizeof (Keydist), keydist_cmp);
-
-	  for(i=0; i<numneighs[p]; i++) {
-	    if (snfp) fprintf(snfp,"%d ", dists[i].key);
-	    sneighs[SNIND(p,i,npts)] = dists[i].key;
-	  }
+      qsort (dists, numneighs[p], sizeof (Keydist), keydist_cmp);
+      /*  printf("storing %d sneighs of cell %d\n", numneighs[p], p); */
+      for(i=0; i<numneighs[p]; i++) {
+	if (snfp) fprintf(snfp,"%d ", dists[i].key);
+	sneighs[SNIND(p,i,npts)] = dists[i].key;
+      }
 	  
-	  fputs("\n", snfp);
-	}
+      if (snfp) fputs("\n", snfp);
+    }
 
   }
 
   
-/*      ##print "nearest to px py is pts[minidx][0] pts[minidx][1]\n"; */
+  /*      ##print "nearest to px py is pts[minidx][0] pts[minidx][1]\n"; */
 
 /*      if (sort_neighs) { */
 /*  	## output the sorted neighbour list too. */
 /*  	&write_neighs(sorted_neighs_file); */
 /*      } */
 
-	fclose(nndfp);
+  if (nndfp) fclose(nndfp);
 	
-	if (sort_neighs) {
-	  free(dists);
-	  if (snfp) fclose(snfp);
-	}
+  if (sort_neighs) {
+    if (snfp) fclose(snfp);
+  }
 }
 
 /**********************************************************************/
@@ -503,145 +551,151 @@ void find_vertices(int npts)
     printf("%s: could not allocate space for numvertices\n", __FUNCTION__);
     exit(-1);
   }
-  /* todo: free vertices1/2. */
-  /* free(numvertices); todo*/
   
   /* Initialise array to store the number of vertices for each data point. */
   for (p=0; p<npts; p++) {
     numvertices[p] = 0;
   }
 
-    for (e=0; e < ednum; e++) {
-      /* For each edge, there are two vertices, v1 and v2. */
+  for (e=0; e < ednum; e++) {
+    /* For each edge, there are two vertices, v1 and v2. */
       
-      l = el[e];
-      v1 = ev1[e]; v2 = ev2[e];
+    l = el[e];
+    v1 = ev1[e]; v2 = ev2[e];
       
-      /* These two vertices belong to two points, p1 and p2. */
+    /* These two vertices belong to two points, p1 and p2. */
 
-      p1 = lb1[l]; p2 = lb2[l];
+    p1 = lb1[l]; p2 = lb2[l];
 
-      p = p1;
-      numv = numvertices[p];
-      if ((numvertices[p] ++) > max_numvertices) {
-	printf("exceeded max_numvertices: %d\n", max_numvertices);
-	exit(-1);
-      }
+    p = p1;
+    numv = numvertices[p];
+    if ((numvertices[p] ++) > max_numvertices) {
+      printf("%s:%d exceeded max_numvertices: %d\n",
+	     __FILE__, __LINE__, max_numvertices);
+      exit(-1);
+    }
+    vertices1[VIND(p,numv)] = v1;
+    vertices2[VIND(p,numv)] = v2;
 
-      vertices1[VIND(p,numv)] = v1;
-      vertices2[VIND(p,numv)] = v2;
+    p = p2;
+    numv = numvertices[p];
+    if ((numvertices[p] ++) > max_numvertices) {
+      printf("%s:%d exceeded max_numvertices: %d\n",
+	     __FILE__, __LINE__, max_numvertices);
+      exit(-1);
+    }
+    vertices1[VIND(p,numv)] = v1;
+    vertices2[VIND(p,numv)] = v2;
+  }    
 
-      p = p2;
-      numv = numvertices[p];
-      if ((numvertices[p] ++) > max_numvertices) {
-	printf("exceeded max_numvertices: %d\n", max_numvertices);
-	exit(-1);
-      }
-
-      vertices1[VIND(p,numv)] = v1;
-      vertices2[VIND(p,numv)] = v2;
-    }    
-
+  /* test code to print out the vertices belonging to point 0. */
+  /*
     for(i=0; i< numvertices[0]; i++) {
-      printf("%d %d  ", vertices1[VIND(0,i)], vertices2[VIND(0,i)]);
+    printf("%d %d  ", vertices1[VIND(0,i)], vertices2[VIND(0,i)]);
     }
     printf("\n");
+  */
     
-    /*
-      vertices[p] stores the vertices for data point p.
-      Each vertex will be included twice in the list, so we
-      now need to order them.
+  /*
+    vertices[p] stores the vertices for data point p.
+    Each vertex will be included twice in the list, so we
+    now need to order them.
       
       
-      Polygon vertices must be ordered so that they are either clockwise
-      or anticlockwise for the area calculation to work.  So for a polygon:
-      A----B
-      |    |
-      C    D
-      \E-/
-      If the points are stored A D C B E, they must be reordered into:
-      A B D E C A (making sure that the first point is also the last point.)
+    Polygon vertices must be ordered so that they are either clockwise
+    or anticlockwise for the area calculation to work.  So for a polygon:
+    A----B
+    |    |
+    C    D
+    \E-/
+    If the points are stored A D C B E, they must be reordered into:
+    A B D E C A (making sure that the first point is also the last point.)
       
-     The ordered vertices are stored in verticeso[p]
-    */
+    The ordered vertices are stored in verticeso[p]
+  */
 
-    for (p=0; p< npts; p++) {
-      printf("finding vertices for site %d\n", p);
-      /* This won't work if the data point has any vertices 
-       * out at infinity, so we should ignore them for now. */
-	if (reject[p]) {
-	  continue;		/* go on to next p. */
-	} else {
-	  ;			/* try point p */
-	}
-
-	/* Order the vertices for data point p.
-	 * Go through the list of vertices, finding the next
-	 * one until we return to the first point. */
+  for (p=0; p< npts; p++) {
+    /* printf("finding vertices for site %d\n", p);*/
+    /* This won't work if the data point has any vertices 
+     * out at infinity, so we should ignore them for now. */
+    if (!reject[p]) {
+      /* Order the vertices for data point p.
+       * Go through the list of vertices, finding the next
+       * one until we return to the first point. */
 	
-
-	first = vertices1[VIND(p,0)]; vertices1[VIND(p,0)] = done;
-  	 next = vertices2[VIND(p,0)]; vertices2[VIND(p,0)] = done;
+	  
+      first = vertices1[VIND(p,0)]; vertices1[VIND(p,0)] = done;
+      next = vertices2[VIND(p,0)]; vertices2[VIND(p,0)] = done;
 	
-	norder = 0;
-	verticeso[VOIND(p,norder)] = first; norder++;
-	looking = 1;
-	nverts = numvertices[p];
-	while (looking) {
-	  printf("looking for %d\n", next);
-	  verticeso[VOIND(p,norder)] = next; norder++;
-	  for (i=0; i<nverts; i++) {
-	    if (next == vertices1[VIND(p,i)]) {
-		    next =  vertices2[VIND(p,i)];
-		    vertices2[VIND(p,i)] = done;
-		    i= nverts;
-		} else if (next == vertices2[VIND(p,i)]) {
-		    next =  vertices1[VIND(p,i)];
-		    vertices1[VIND(p,i)] = done;
-		    i= nverts;
-		}
-	    }
-	    if (next == first) {
-	      /* we've finished, since we're back to the first vertex. */
-	      looking = 0;
-	    }
+      norder = 0;
+      verticeso[VOIND(p,norder)] = first; norder++;
+      if (norder > max_numvertices_o) {
+	printf("%s:%d max_numvertices_o (%d) reached\n",
+	       __FILE__, __LINE__, norder);
+	exit(-1);
+      }
+
+      looking = 1;
+      nverts = numvertices[p];
+      while (looking) {
+	/*printf("looking for vertice %d\n", next);*/
+	verticeso[VOIND(p,norder)] = next;
+	norder++;		/* todo: sje: check this doesn't exceed max. */
+	for (i=0; i<nverts; i++) {
+	  if (next == vertices1[VIND(p,i)]) {
+	    next =  vertices2[VIND(p,i)];
+	    vertices2[VIND(p,i)] = done;
+	    i= nverts;
+	  } else if (next == vertices2[VIND(p,i)]) {
+	    next =  vertices1[VIND(p,i)];
+	    vertices1[VIND(p,i)] = done;
+	    i= nverts;
+	  }
 	}
-	/*  Now do the next data point. */
+	if (next == first) {
+	  /* we've finished, since we're back to the first vertex. */
+	  looking = 0;
+	}
+      }
+      /*  Now do the next data point. */
     }
+  }
     
-
-    /*Print out the ordered vertices for each data point. */
+  /* After sorting, no longer need the unordered vertices. */
+  myfree(vertices1); myfree(vertices2);
+    
+  /*Print out the ordered vertices for each data point. */
 #ifdef unused
-    if (need_pvertices) {
-	open(VERT, ">vertices_point_file");
-	for (p=0; p<npts; p++) {
+  if (need_pvertices) {
+    open(VERT, ">vertices_point_file");
+    for (p=0; p<npts; p++) {
 	    
-	    if (reject{p}) { 
-		print STDERR "vertice printing: ignoring point p\n";
-		print VERT "-1\n";
-		next;
-	    }
-	    n = numvertices[p];
-	    for (i=0; i<n; i++) {
-		v = verticeso[p][i] + first_index;
-		print VERT "v ";
-	    }
-	    print VERT "\n";
-	}
-	close(VERT);
+      if (reject{p}) { 
+	print STDERR "vertice printing: ignoring point p\n";
+	print VERT "-1\n";
+	next;
+      }
+      n = numvertices[p];
+      for (i=0; i<n; i++) {
+	v = verticeso[p][i] + first_index;
+	print VERT "v ";
+      }
+      print VERT "\n";
     }
+    close(VERT);
+  }
 #endif
 }
 
 
 
-void find_areas(int npts, float *temp)
+void find_areas(int npts, float *info)
 {
   /* Find the area of each valid polygon.
    * Print out the ordered vertices for each data point.
    *
    * To get the areas, the vertices must first have been ordered,
-   * and stored in verticeso.
+   * and stored in verticeso.  This is done by find_vertices().
    *
    * Algorithm taken from: 
    * http://www.mhri.edu.au/~pdb/geometry/polyarea/
@@ -660,7 +714,7 @@ void find_areas(int npts, float *temp)
   
   for (p=0; p < npts; p++) {
     if (reject[p]) {
-      temp[RIND(p,3,npts)] = -1;
+      info[RIND(p,3,npts)] = -1;
       continue;
     }
     sum = 0.0;
@@ -696,7 +750,19 @@ void find_areas(int npts, float *temp)
 			  * on ordering of coordinates. */
 
     /*v = p+first_index;*/
-    temp[RIND(p,3,npts)] = sum;
+    info[RIND(p,3,npts)] = sum;
   }
   
+}
+
+
+void sjevoradd(float *xpts, float *ypts, float *temp, int npts)
+{
+  /* Test function to see that matwrap is working okay.
+   * temp[i] = xpts[i] + ypts[i] */
+  
+  int i;
+  for (i=0; i< npts; i++)
+    temp[i] = xpts[i] + ypts[i];
+
 }
