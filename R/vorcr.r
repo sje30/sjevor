@@ -58,9 +58,26 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'nags') {
     delangs <- z$delangs[1:delidmax]
     dim(delangs) <- c(3, delidmax/3); delangs <- t(delangs);
 
+
+    ## Normally ignore.rejects is true so that we reject triangles
+    ## that involve reject sites.
+    ignore.rejects <- TRUE;
+    if (ignore.rejects) {
+      anyrej <- rejects[delids]; dim(anyrej) <- c(length(anyrej)/3,3);
+      ## rejtri[i] is true if the ith triangle should be rejected.
+      rejtri <- apply(anyrej, 1, any)
+    } else {
+      ## accept all delauanay triangles.
+      rejtri <- logical(length = (length(anyrej)/3))# all elements FALSE.
+    }
+
+    delacc <- which(!rejtri)            #ids of accepted triangles.
+    delrej <- which(rejtri)             #ids of rejected triangles.
+    
     list(info = info, neighs = sneighs, cr = cr, meannnd = meannnd,
          sdnnd = sdnnd, rejects = rejects, iangles = iangles,
          delids = delids, dellens = dellens, delangs = delangs,
+         delacc = delacc, delrej = delrej,
          numneighs = numneighs)
 }
 
@@ -83,6 +100,35 @@ ianglesplot <- function(angles, show=TRUE)  {
   }
 
   list(x=ah$mids, y=cdf)
+}
+
+del.plot <- function(pts, v) {
+  ## Plot the Delaunay triangulation.
+  ## pts is the 2d set of data points; v is the voronoi information from
+  ## that data set.
+  
+  ## First draw the sites.
+  par(col ="black")
+  par(mfrow=c(1,1), pty="s")
+  plot(pts, type="n")                   #don't plot points, just set ranges.
+  text(pts[,1], pts[,2], seq(1:length(pts))) #label the points.
+
+  
+  ## draw rejected tris.
+  par(col ="red")
+  for (i in v$delrej) {
+    t <- c(v$delids[i,], v$delids[i,1]);
+    lines(tdata[t,])
+  }
+  
+  ## draw accepted tris.
+  par(col ="blue")
+  for (i in v$delacc) {
+    t <- c(v$delids[i,], v$delids[i,1]);
+    lines(tdata[t,])
+  }
+
+  par(col = "black")                    #reset to usual colour.
 }
 
 ## dyn.unload("/home/stephen/langs/R/vorr/libvor.so")
