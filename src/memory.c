@@ -2,12 +2,13 @@
 #include "defs.h"
 #include <stdio.h>
 
-freeinit(fl, size)
+void freeinit(fl, size)
      struct	Freelist *fl;
      int	size;
 {
   fl -> head = (struct Freenode *) NULL;
   fl -> nodesize = size;
+  printf("sje: freeinit\n");
 }
 
 char *getfree(fl)
