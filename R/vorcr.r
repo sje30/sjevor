@@ -253,7 +253,7 @@ ianglesplot <- function(angles, show=TRUE)  {
   list(x=ah$mids, y=cdf)
 }
 
-del.plot <- function(v) {
+del.plot <- function(v, asp=1, main=NULL) {
   ## Plot the Delaunay triangulation.
   ## TODO: this is not working for the toroidal version -- some points
   ## have been deleted, or they will need remapping to their real id numbers.
@@ -262,8 +262,8 @@ del.plot <- function(v) {
   ## First draw the sites.
   par(col ="black")
   par(mfrow=c(1,1), pty="s")
-  plot(pts, type="n")                   #don't plot points, just set ranges.
-  text(pts[,1], pts[,2], seq(1:length(pts))) #label the points.
+  plot(pts, type="n", asp=asp, main=main) #don't plot points, just set ranges.
+  text(pts[,1], pts[,2], seq(1:length(pts[,1]))) #label the points.
 
   
   ## draw rejected tris.
