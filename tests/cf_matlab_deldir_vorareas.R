@@ -28,8 +28,9 @@ if (need.newdmins) {
 }
 
 ## Otherwise, don't worry about making new dmins...
+if (FALSE) {
 library(sjevor)
-invisible(.libPaths( Sys.getenv("MYRLIB")))
+invisible(.libPaths( Sys.getenv("R_LIBS")))
 library(deldir)                         #used for comparison.
 
 
@@ -78,3 +79,4 @@ compare("triarray.dat", "triarray_matareas.txt")
 ## between 10-8 and 10-4.  Small differences may be due to numerical
 ## fuzz added (e.g. "frac" used by deldir; I think matlab 6 no longer
 ## uses fuzz.)
+}
