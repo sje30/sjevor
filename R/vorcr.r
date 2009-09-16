@@ -311,7 +311,7 @@ plot.sjevor <- function(v, show.pts=TRUE, show.areas=FALSE,
       }
     } else {
       ## don't want to see points
-      plot(v$pts[,1], v$pts[,2], type="n",asp=1, xlab="", ylab="")
+      plot(v$pts[,1], v$pts[,2], type="n",asp=1, xlab="", ylab="", ...)
     }
   }
   segments(x0, y0, x1, y1)
