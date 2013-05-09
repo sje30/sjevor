@@ -1,7 +1,7 @@
 ## Extra tests for the Voronoi library.
 ## Tue 12 Mar 2002
 library(sjevor)
-invisible(.libPaths( Sys.getenv("MYRLIB")))
+##invisible(.libPaths( Sys.getenv("R_LIBS")))
 library(deldir)
 print(1)
 ##library(sjedmin)
