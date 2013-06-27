@@ -1,0 +1,7 @@
+Package: sjevor
+Version: 0.31
+Title: Voronoi analysis based on Steve Fortune's code.
+Author: Stephen Eglen <stephen@gnu.org>
+Maintainer: Stephen Eglen <stephen@gnu.org>
+Description: Compute the Voronoi tesselation.
+License: GPL
