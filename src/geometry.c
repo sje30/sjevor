@@ -143,7 +143,7 @@ int right_of(el, p)
 }
 
 
-endpoint(e, lr, s)
+void endpoint(e, lr, s)
      struct Edge *e;
      int	lr;
      struct Site *s;
