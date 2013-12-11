@@ -198,7 +198,7 @@ plotinit()
   range(pxmin, pymin, pxmax, pymax);
 }
 
-
+#define LARGE_BAD_NUMBER -99999
 int clip_line(e)
      struct Edge *e;
 {
@@ -219,14 +219,14 @@ int clip_line(e)
       y1 = pymin;
       if (s1!=(struct Site *)NULL && s1->coord.y > pymin)
 	y1 = s1->coord.y;
-      if(y1>pymax) return;
+      if(y1>pymax) return LARGE_BAD_NUMBER;
       x1 = e -> c - e -> b * y1;
       y2 = pymax;
       if (s2!=(struct Site *)NULL && s2->coord.y < pymax) 
 	y2 = s2->coord.y;
       if(y2<pymin) return(0);
       x2 = e -> c - e -> b * y2;
-      if ((x1> pxmax & x2>pxmax) | (x1<pxmin&x2<pxmin)) return;
+      if ((x1> pxmax & x2>pxmax) | (x1<pxmin&x2<pxmin)) return LARGE_BAD_NUMBER;
       if(x1> pxmax)
 	{	x1 = pxmax; y1 = (e -> c - x1)/e -> b;};
       if(x1<pxmin)
