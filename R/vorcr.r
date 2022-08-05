@@ -14,7 +14,7 @@ vorcr <- function(x, y, xl, xh, yl, yh, fuzz = 0, opts = 'as') {
   ## maximum number of polygon npts to allow.  for each line, there
   ## will be four values (x1,y1 x2, y2), so we have five times the
   ## number of lines to be safe.
-  max.num.neighs <- 18                #conservative maximum.
+  max.num.neighs <- 50                #conservative maximum.
   max.del.tris <- 5           
   iangles.len <- npts*10              #max num of internal angles (10*npts)
   polynpts <- npts * 4 * 5            #normally npts*20 (4*5)
